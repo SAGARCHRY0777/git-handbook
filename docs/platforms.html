@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GitHub &amp; GitLab · Git Handbook</title>
+<meta name="description" content="PRs versus MRs, Actions versus GitLab CI side by side, branch protection, and which platform to pick for what.">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231F4E79'/%3E%3Crect x='7' y='8' width='18' height='3' rx='1.5' fill='%23fff'/%3E%3Crect x='7' y='14' width='12' height='3' rx='1.5' fill='%23A9CCEC'/%3E%3Crect x='7' y='20' width='15' height='3' rx='1.5' fill='%237FB2E0'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="style.css">
+<script>
+  // Applied before first paint so the page never flashes the wrong theme.
+  (function () {
+    try {
+      var t = localStorage.getItem("git-handbook:theme");
+      if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+    } catch (e) {}
+  })();
+</script>
+</head>
+<body>
+
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <button class="menu-btn" id="menu-btn" aria-label="Open navigation" aria-expanded="false">☰</button>
+  <a class="brand" href="index.html">Git&nbsp;Handbook</a>
+  <div class="search-wrap">
+    <input id="search" type="search" placeholder="Search the handbook…" autocomplete="off"
+           aria-label="Search" aria-controls="results" aria-expanded="false">
+    <div id="results" class="results" role="listbox" hidden></div>
+  </div>
+  <button class="theme-btn" id="theme-btn" aria-label="Switch theme">◐</button>
+</header>
+
+<div class="shell">
+  <aside class="sidebar" id="sidebar"><div class="nav-group"><div class="nav-group-title">Start here</div><ul><li><a href="index.html">Start here</a></li></ul></div><div class="nav-group"><div class="nav-group-title">How git actually works</div><ul><li><a href="mental-model.html">How git actually works</a></li></ul></div><div class="nav-group"><div class="nav-group-title">Everyday git</div><ul><li><a href="everyday.html">Everyday git</a></li></ul></div><div class="nav-group"><div class="nav-group-title">Branching & merging</div><ul><li><a href="branching.html">Branching & merging</a></li></ul></div><div class="nav-group"><div class="nav-group-title">Undoing & recovery</div><ul><li><a href="undoing.html">Undoing & recovery</a></li></ul></div><div class="nav-group"><div class="nav-group-title">GitHub & GitLab</div><ul><li><a href="platforms.html" class="active">GitHub & GitLab</a></li></ul></div><div class="nav-group"><div class="nav-group-title">Reference</div><ul><li><a href="cheatsheet.html">The cheat sheet</a></li></ul></div></aside>
+
+  <main id="main" class="main">
+    <article class="prose"><h1 id="github-and-gitlab"><a class="anchor" href="#github-and-gitlab">#</a>GitHub and GitLab</h1><blockquote>
+<p><strong>Git is the version control system. GitHub and GitLab are products built on
+top of it.</strong> Nothing on this page is git — it is collaboration workflow,
+review, CI, and permissions.</p>
+</blockquote>
+<hr>
+<h2 id="1-the-same-ideas-different-names"><a class="anchor" href="#1-the-same-ideas-different-names">#</a>1 · The same ideas, different names</h2><div class="table-scroll"><table><thead><tr><th>Concept</th><th>GitHub</th><th>GitLab</th></tr></thead><tbody><tr><td>Proposing a change</td><td><strong>Pull request</strong></td><td><strong>Merge request</strong></td></tr><tr><td>CI config file</td><td><code>.github/workflows/*.yml</code></td><td><code>.gitlab-ci.yml</code></td></tr><tr><td>CI compute</td><td>Runners (hosted or self-hosted)</td><td>Runners (hosted or self-hosted)</td></tr><tr><td>Secrets</td><td>Actions secrets &amp; variables</td><td>CI/CD variables</td></tr><tr><td>Container registry</td><td>GitHub Packages</td><td>Container Registry (built in)</td></tr><tr><td>Static hosting</td><td>GitHub Pages</td><td>GitLab Pages</td></tr><tr><td>Required reviewers</td><td><code>CODEOWNERS</code></td><td><code>CODEOWNERS</code> (premium for some rules)</td></tr><tr><td>Issue tracking</td><td>Issues + Projects</td><td>Issues + Boards + Epics</td></tr><tr><td>Access control</td><td>Org / team / repo roles</td><td>Group / subgroup / project</td></tr></tbody></table></div><blockquote>
+<p><strong>&quot;Pull request&quot; is arguably the worse name.</strong> You are <em>requesting that they
+merge</em> your branch. GitLab&#39;s &quot;merge request&quot; describes it accurately. Same
+object, though.</p>
+</blockquote>
+<hr>
+<h2 id="2-the-review-workflow"><a class="anchor" href="#2-the-review-workflow">#</a>2 · The review workflow</h2><pre class="mermaid">flowchart LR
+    A[&quot;branch&lt;br/&gt;off main&quot;] --&gt; B[&quot;commit&lt;br/&gt;locally&quot;]
+    B --&gt; C[&quot;push&lt;br/&gt;branch&quot;]
+    C --&gt; D[&quot;open PR / MR&quot;]
+    D --&gt; E{&quot;CI passes?&quot;}
+    E --&gt;|&quot;no&quot;| B
+    E --&gt;|&quot;yes&quot;| F{&quot;review&lt;br/&gt;approved?&quot;}
+    F --&gt;|&quot;changes requested&quot;| B
+    F --&gt;|&quot;approved&quot;| G[&quot;merge&lt;br/&gt;squash / merge / rebase&quot;]
+    G --&gt; H[&quot;delete branch&quot;]
+
+    classDef gate fill:#fbeee0,stroke:#b15a08,stroke-width:2px
+    class E,F gate</pre><p><strong>A good PR is small.</strong> Review quality falls off a cliff past a few hundred
+lines — reviewers switch from reading to skimming, and skimmed reviews approve
+bugs. <strong>If a change must be large, split it into a stack of small PRs.</strong></p>
+<p><strong>Write the description for the reviewer, not the record:</strong> what changed, why,
+and what you want them to look hardest at. &quot;Fixes #123&quot; is not a description.</p>
+<hr>
+<h2 id="3-branch-protection-what-to-actually-turn-on"><a class="anchor" href="#3-branch-protection-what-to-actually-turn-on">#</a>3 · Branch protection — what to actually turn on</h2><div class="table-scroll"><table><thead><tr><th>Setting</th><th>Why</th></tr></thead><tbody><tr><td><strong>Require a PR before merging</strong></td><td>No direct pushes to <code>main</code></td></tr><tr><td><strong>Require status checks to pass</strong></td><td>CI is a gate, not a suggestion</td></tr><tr><td><strong>Require branches up to date</strong></td><td>Prevents &quot;passed on stale base, breaks on merge&quot;</td></tr><tr><td><strong>Require ≥1 approval</strong></td><td>Somebody read it</td></tr><tr><td><strong>Dismiss stale approvals on new commits</strong></td><td>Approval covered the code that was reviewed</td></tr><tr><td><strong>Require conversation resolution</strong></td><td>Comments cannot be silently ignored</td></tr><tr><td><strong>Restrict force-push</strong></td><td>The one that saves you</td></tr><tr><td><strong>Require signed commits</strong></td><td>Only where you actually need provenance</td></tr></tbody></table></div><blockquote>
+<p><strong>&quot;Require branches up to date&quot; is the one people skip and then get bitten
+by.</strong> Your PR passed CI against a two-day-old <code>main</code>. Someone else merged an
+incompatible change. Yours merges green and <code>main</code> breaks. This setting forces
+a re-run against current <code>main</code>.</p>
+</blockquote>
+<hr>
+<h2 id="4-ci-side-by-side"><a class="anchor" href="#4-ci-side-by-side">#</a>4 · CI side by side</h2><p><strong>The same pipeline in both systems.</strong></p>
+<p><strong>GitHub Actions</strong> — <code>.github/workflows/build.yml</code>:</p>
+<pre class="code"><code class="language-yaml">name: Build
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: &quot;20&quot;
+          cache: npm
+      - run: npm ci
+      - run: npm test</code></pre><p><strong>GitLab CI</strong> — <code>.gitlab-ci.yml</code>:</p>
+<pre class="code"><code class="language-yaml">stages: [test]
+
+test:
+  stage: test
+  image: node:20
+  cache:
+    key: &quot;$CI_COMMIT_REF_SLUG&quot;
+    paths: [node_modules/]
+  script:
+    - npm ci
+    - npm test
+  rules:
+    - if: $CI_COMMIT_BRANCH == &quot;main&quot;
+    - if: $CI_PIPELINE_SOURCE == &quot;merge_request_event&quot;</code></pre><div class="table-scroll"><table><thead><tr><th></th><th>GitHub Actions</th><th>GitLab CI</th></tr></thead><tbody><tr><td>Unit of work</td><td><strong>job</strong> in a workflow</td><td><strong>job</strong> in a stage</td></tr><tr><td>Ordering</td><td><code>needs:</code> between jobs</td><td><code>stages:</code> are sequential</td></tr><tr><td>Reuse</td><td>Marketplace <strong>actions</strong></td><td><code>include:</code> and <code>extends:</code></td></tr><tr><td>Container-native</td><td>Optional (<code>container:</code>)</td><td><strong>Default</strong> — every job names an image</td></tr><tr><td>Config location</td><td>Many files in <code>.github/workflows/</code></td><td>Usually one <code>.gitlab-ci.yml</code></td></tr><tr><td>Self-hosting</td><td>Self-hosted runners</td><td>Runners; <strong>the whole platform can self-host</strong></td></tr></tbody></table></div><blockquote>
+<p><strong>The clearest structural difference:</strong> GitLab CI is container-first — every
+job declares an image and runs inside it. GitHub Actions is
+step-and-marketplace-first, where you compose published actions. Neither is
+better; they reward different habits.</p>
+</blockquote>
+<hr>
+<h2 id="5-choosing"><a class="anchor" href="#5-choosing">#</a>5 · Choosing</h2><div class="table-scroll"><table><thead><tr><th>Want</th><th>Pick</th></tr></thead><tbody><tr><td>Open source, discoverability, contributors</td><td><strong>GitHub</strong> — the network effect is the product</td></tr><tr><td>Self-hosted everything, one tool for the lifecycle</td><td><strong>GitLab</strong> — it is a complete DevOps platform</td></tr><tr><td>The largest ecosystem of ready-made CI steps</td><td><strong>GitHub</strong> — the Actions marketplace</td></tr><tr><td>Built-in container registry, security scanning, environments</td><td><strong>GitLab</strong> — included rather than assembled</td></tr><tr><td>Enterprise with strict data residency</td><td><strong>GitLab self-managed</strong></td></tr><tr><td>A portfolio recruiters will look at</td><td><strong>GitHub</strong> — this is where they look</td></tr></tbody></table></div><blockquote>
+<p><strong>For a public portfolio the answer is GitHub, and it is not close.</strong> Not
+because the product is better, but because that is where people already are.</p>
+</blockquote>
+<p><strong>They interoperate.</strong> Both are git, so mirroring one to the other is
+straightforward, and moving is a push away — the repository is portable even
+when the CI config and issues are not.</p>
+<hr>
+<h2 id="6-making-a-repo-worth-finding"><a class="anchor" href="#6-making-a-repo-worth-finding">#</a>6 · Making a repo worth finding</h2><p><strong>Most repositories are invisible, and the reasons are fixable in minutes.</strong></p>
+<div class="table-scroll"><table><thead><tr><th>Do this</th><th>Why</th></tr></thead><tbody><tr><td><strong>Add topics</strong></td><td>This is how GitHub search finds repos. No topics ≈ unfindable</td></tr><tr><td><strong>One-line description</strong></td><td>It is the only text in search results</td></tr><tr><td><strong>Set the homepage URL</strong></td><td>The About box link, if there is a live site</td></tr><tr><td><strong>A README that opens with what it is and who it is for</strong></td><td>People decide in ten seconds</td></tr><tr><td><strong>Pin your best 6</strong></td><td>The profile shows pinned repos first</td></tr><tr><td><strong>Archive or hide dead repos</strong></td><td>Signal-to-noise: six good repos read better than forty-four with thirty-eight abandoned</td></tr><tr><td><strong>A profile README</strong></td><td>The repo named after your username renders on your profile</td></tr></tbody></table></div><blockquote>
+<p><strong>Signal-to-noise is the thing people get wrong.</strong> A visitor scans your
+profile for about fifteen seconds. Forty repos where most are course exercises
+reads as &quot;student&quot;; six polished ones read as &quot;engineer&quot;. <strong>Archiving is not
+deleting</strong> — the code stays, it just stops competing for attention.</p>
+</blockquote>
+<hr>
+<h2 id="7-interview-questions"><a class="anchor" href="#7-interview-questions">#</a>7 · Interview questions</h2><div class="table-scroll"><table><thead><tr><th>Question</th><th>Answer</th></tr></thead><tbody><tr><td>⭐ &quot;PR vs MR?&quot;</td><td>The same object with different names — GitHub&#39;s pull request and GitLab&#39;s merge request both propose merging a branch, gated by review and CI.</td></tr><tr><td>⭐ &quot;What branch protections would you set?&quot;</td><td>Require a PR, passing checks, at least one approval, dismissal of stale approvals on new commits, and no force-push. And require branches be up to date, or a PR can pass against a stale base and break <code>main</code> on merge.</td></tr><tr><td>&quot;Actions vs GitLab CI?&quot;</td><td>Same model — jobs, dependencies, runners. GitLab is container-first: every job names an image. Actions is composition-first around a marketplace of reusable steps. GitLab bundles more of the lifecycle; GitHub has the bigger ecosystem.</td></tr><tr><td>&quot;How do you keep PRs reviewable?&quot;</td><td>Keep them small. Past a few hundred lines reviewers skim rather than read, and skimmed reviews approve bugs. Stack several small PRs instead of one large one.</td></tr><tr><td>&quot;Squash, merge or rebase on merge?&quot;</td><td>Squash by default, so <code>main</code> is one clean revertible commit per feature. Merge commit when the branch history matters; rebase-and-merge only when each commit was deliberately curated.</td></tr></tbody></table></div><hr>
+<h2 id="stop-condition"><a class="anchor" href="#stop-condition">#</a>Stop condition</h2><p>You have this when you can:</p>
+<ol>
+<li>map PR/MR, Actions/GitLab CI and their config files,</li>
+<li>name the protections you would enable and why &quot;up to date&quot; matters,</li>
+<li>write an equivalent pipeline in both systems,</li>
+<li>choose a platform for a stated goal, and</li>
+<li>list what makes a repository findable.</li>
+</ol>
+</article>
+    <div class="pager-row"><a class="pager previous" href="undoing.html"><span>previous</span>Undoing & recovery</a><a class="pager next" href="cheatsheet.html"><span>next</span>The cheat sheet</a></div>
+  </main>
+
+  <nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><ul><li class="d2"><a href="#1-the-same-ideas-different-names">1 · The same ideas, different names</a></li><li class="d2"><a href="#2-the-review-workflow">2 · The review workflow</a></li><li class="d2"><a href="#3-branch-protection-what-to-actually-turn-on">3 · Branch protection — what to actually turn on</a></li><li class="d2"><a href="#4-ci-side-by-side">4 · CI side by side</a></li><li class="d2"><a href="#5-choosing">5 · Choosing</a></li><li class="d2"><a href="#6-making-a-repo-worth-finding">6 · Making a repo worth finding</a></li><li class="d2"><a href="#7-interview-questions">7 · Interview questions</a></li><li class="d2"><a href="#stop-condition">Stop condition</a></li></ul></nav>
+</div>
+
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  window.__mermaid = mermaid;
+  const dark = () => {
+    const explicit = document.documentElement.getAttribute("data-theme");
+    if (explicit) return explicit === "dark";
+    return matchMedia("(prefers-color-scheme: dark)").matches;
+  };
+  const start = () => {
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: dark() ? "dark" : "neutral",
+      securityLevel: "strict",
+      fontFamily: "IBM Plex Sans, system-ui, sans-serif",
+    });
+    mermaid.run({ querySelector: "pre.mermaid" });
+  };
+  start();
+  // Diagrams carry their own colours, so they have to be re-rendered when the
+  // reader flips the theme rather than restyled by CSS.
+  window.addEventListener("themechange", () => {
+    document.querySelectorAll("pre.mermaid").forEach((el) => {
+      if (el.dataset.src) { el.innerHTML = el.dataset.src; el.removeAttribute("data-processed"); }
+    });
+    start();
+  });
+</script>
+<script src="app.js"></script>
+</body>
+</html>

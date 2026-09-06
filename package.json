@@ -1,0 +1,15 @@
+{
+  "name": "git-handbook",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Git, GitHub and GitLab: the mental model, the state transitions, and how to get out of trouble.",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "serve": "node scripts/serve.mjs",
+    "note": "node scripts/new-note.mjs",
+    "publish": "node scripts/publish.mjs"
+  },
+  "devDependencies": { "marked": "^14.1.3" },
+  "engines": { "node": ">=20" }
+}

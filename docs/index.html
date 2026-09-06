@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Start here · Git Handbook</title>
+<meta name="description" content="Why git feels arbitrary, the one mental model that fixes it, and the order to read this in.">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231F4E79'/%3E%3Crect x='7' y='8' width='18' height='3' rx='1.5' fill='%23fff'/%3E%3Crect x='7' y='14' width='12' height='3' rx='1.5' fill='%23A9CCEC'/%3E%3Crect x='7' y='20' width='15' height='3' rx='1.5' fill='%237FB2E0'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="style.css">
+<script>
+  // Applied before first paint so the page never flashes the wrong theme.
+  (function () {
+    try {
+      var t = localStorage.getItem("git-handbook:theme");
+      if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+    } catch (e) {}
+  })();
+</script>
+</head>
+<body>
+
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <button class="menu-btn" id="menu-btn" aria-label="Open navigation" aria-expanded="false">☰</button>
+  <a class="brand" href="index.html">Git&nbsp;Handbook</a>
+  <div class="search-wrap">
+    <input id="search" type="search" placeholder="Search the handbook…" autocomplete="off"
+           aria-label="Search" aria-controls="results" aria-expanded="false">
+    <div id="results" class="results" role="listbox" hidden></div>
+  </div>
+  <button class="theme-btn" id="theme-btn" aria-label="Switch theme">◐</button>
+</header>
+
+<div class="shell">
+  <aside class="sidebar" id="sidebar"><div class="nav-group"><div class="nav-group-title">Start here</div><ul><li><a href="index.html" class="active">Start here</a></li></ul></div><div class="nav-group"><div class="nav-group-title">How git actually works</div><ul><li><a href="mental-model.html">How git actually works</a></li></ul></div><div class="nav-group"><div class="nav-group-title">Everyday git</div><ul><li><a href="everyday.html">Everyday git</a></li></ul></div><div class="nav-group"><div class="nav-group-title">Branching & merging</div><ul><li><a href="branching.html">Branching & merging</a></li></ul></div><div class="nav-group"><div class="nav-group-title">Undoing & recovery</div><ul><li><a href="undoing.html">Undoing & recovery</a></li></ul></div><div class="nav-group"><div class="nav-group-title">GitHub & GitLab</div><ul><li><a href="platforms.html">GitHub & GitLab</a></li></ul></div><div class="nav-group"><div class="nav-group-title">Reference</div><ul><li><a href="cheatsheet.html">The cheat sheet</a></li></ul></div></aside>
+
+  <main id="main" class="main">
+    <article class="prose"><h1 id="git-handbook"><a class="anchor" href="#git-handbook">#</a>Git Handbook</h1><blockquote>
+<p><strong>Git feels arbitrary because most people learn it as a list of commands.</strong>
+<code>add</code>, <code>commit</code>, <code>push</code>, and then one day something goes wrong and none of the
+memorised commands apply.</p>
+<p><strong>There is a model underneath, and it is small.</strong> Learn it and the commands
+stop being magic incantations — they become moves between four places.</p>
+</blockquote>
+<hr>
+<h2 id="1-the-whole-model-in-one-diagram"><a class="anchor" href="#1-the-whole-model-in-one-diagram">#</a>1 · The whole model in one diagram</h2><pre class="mermaid">flowchart LR
+    W[&quot;Working&lt;br/&gt;directory&quot;] --&gt;|&quot;git add&quot;| S[&quot;Staging area&lt;br/&gt;(index)&quot;]
+    S --&gt;|&quot;git commit&quot;| L[&quot;Local&lt;br/&gt;repository&quot;]
+    L --&gt;|&quot;git push&quot;| R[&quot;Remote&lt;br/&gt;repository&quot;]
+    R --&gt;|&quot;git fetch&quot;| L
+    L --&gt;|&quot;git checkout / restore&quot;| W
+    S --&gt;|&quot;git restore --staged&quot;| W
+    L --&gt;|&quot;git reset&quot;| S
+
+    classDef local fill:#e4edf6,stroke:#1f4e79,stroke-width:2px
+    class W,S,L local</pre><p><strong>Four places. Almost every command moves something between two of them.</strong>
+When a command confuses you, the question is always: <em>which two areas does this
+touch, and in which direction?</em></p>
+<div class="table-scroll"><table><thead><tr><th>Area</th><th>Is</th><th>Lives in</th></tr></thead><tbody><tr><td><strong>Working directory</strong></td><td>The files you can see and edit</td><td>Your folder</td></tr><tr><td><strong>Staging area (index)</strong></td><td>What will go into the next commit</td><td><code>.git/index</code></td></tr><tr><td><strong>Local repository</strong></td><td>Your committed history</td><td><code>.git/objects</code></td></tr><tr><td><strong>Remote</strong></td><td>The shared copy</td><td>GitHub / GitLab</td></tr></tbody></table></div><blockquote>
+<p><strong>The staging area is the part that trips people up</strong>, and it is the part that
+makes git better than the alternatives: you choose <em>precisely</em> what goes into
+a commit, rather than committing everything you happened to change.</p>
+</blockquote>
+<hr>
+<h2 id="2-what-this-handbook-is-not"><a class="anchor" href="#2-what-this-handbook-is-not">#</a>2 · What this handbook is not</h2><p>It is not a command reference — <code>git help</code> and the man pages already exist and
+are better at that. <strong>This is the model, the state transitions, and the recovery
+paths</strong>, because those are what a reference cannot give you.</p>
+<p>Every claim about git&#39;s behaviour here was <strong>executed against a real repository</strong>
+and the output is real. Where a diagram shows what a command does, that is what
+it actually did.</p>
+<hr>
+<h2 id="3-reading-order"><a class="anchor" href="#3-reading-order">#</a>3 · Reading order</h2><pre class="mermaid">flowchart TD
+    A[&quot;How git actually works&lt;br/&gt;objects, refs, the DAG&quot;] --&gt; B[&quot;Everyday git&lt;br/&gt;the 12 commands you need&quot;]
+    B --&gt; C[&quot;Branching &amp; merging&lt;br/&gt;merge vs rebase&quot;]
+    C --&gt; D[&quot;Undoing &amp; recovery&lt;br/&gt;reset, revert, restore, reflog&quot;]
+    D --&gt; E[&quot;GitHub &amp; GitLab&lt;br/&gt;PRs, MRs, CI, protections&quot;]
+    E --&gt; F[&quot;Cheat sheet&lt;br/&gt;one page&quot;]</pre><div class="table-scroll"><table><thead><tr><th>If you have</th><th>Read</th></tr></thead><tbody><tr><td><strong>20 minutes</strong></td><td><a href="cheatsheet.html">The cheat sheet</a>, and nothing else</td></tr><tr><td><strong>An hour</strong></td><td><a href="mental-model.html">How git actually works</a> then the cheat sheet</td></tr><tr><td><strong>You broke something now</strong></td><td><a href="undoing.html">Undoing &amp; recovery</a> — start at §1</td></tr><tr><td><strong>You are learning properly</strong></td><td>Straight through, in the order above</td></tr></tbody></table></div><hr>
+<h2 id="4-the-three-sentences-that-prevent-most-problems"><a class="anchor" href="#4-the-three-sentences-that-prevent-most-problems">#</a>4 · The three sentences that prevent most problems</h2><blockquote>
+<p><strong>1. A commit is a snapshot, not a diff.</strong> Git stores the whole tree each
+time, deduplicated by content hash. Diffs are computed when you ask for them,
+not stored.</p>
+</blockquote>
+<blockquote>
+<p><strong>2. A branch is a movable pointer to one commit — nothing more.</strong> It is a
+file containing 40 characters. Creating one is free; deleting one deletes no
+data.</p>
+</blockquote>
+<blockquote>
+<p><strong>3. Almost nothing is ever really deleted until <code>gc</code> runs.</strong> The
+<a href="undoing.html#5--reflog--the-undo-history-for-your-undo">reflog</a> remembers
+where HEAD has been, usually for 90 days. <strong>If you think you destroyed work,
+you probably have not.</strong></p>
+</blockquote>
+<hr>
+<h2 id="5-companion-handbooks"><a class="anchor" href="#5-companion-handbooks">#</a>5 · Companion handbooks</h2><div class="table-scroll"><table><thead><tr><th>Repo</th><th>Covers</th></tr></thead><tbody><tr><td><a href="https://SAGARCHRY0777.github.io/dsa-handbook/">dsa-handbook</a></td><td>Coding interviews — patterns and worked solutions</td></tr><tr><td><a href="https://SAGARCHRY0777.github.io/system-design-handbook/">system-design-handbook</a></td><td>The system design round</td></tr><tr><td><a href="https://SAGARCHRY0777.github.io/llm-handbook/">llm-handbook</a></td><td>LLM systems — RAG, evaluation, serving</td></tr></tbody></table></div><p>Start with <a href="mental-model.html">how git actually works</a>.</p>
+</article>
+    <div class="pager-row"><a class="pager next" href="mental-model.html"><span>next</span>How git actually works</a></div>
+  </main>
+
+  <nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><ul><li class="d2"><a href="#1-the-whole-model-in-one-diagram">1 · The whole model in one diagram</a></li><li class="d2"><a href="#2-what-this-handbook-is-not">2 · What this handbook is not</a></li><li class="d2"><a href="#3-reading-order">3 · Reading order</a></li><li class="d2"><a href="#4-the-three-sentences-that-prevent-most-problems">4 · The three sentences that prevent most problems</a></li><li class="d2"><a href="#5-companion-handbooks">5 · Companion handbooks</a></li></ul></nav>
+</div>
+
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  window.__mermaid = mermaid;
+  const dark = () => {
+    const explicit = document.documentElement.getAttribute("data-theme");
+    if (explicit) return explicit === "dark";
+    return matchMedia("(prefers-color-scheme: dark)").matches;
+  };
+  const start = () => {
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: dark() ? "dark" : "neutral",
+      securityLevel: "strict",
+      fontFamily: "IBM Plex Sans, system-ui, sans-serif",
+    });
+    mermaid.run({ querySelector: "pre.mermaid" });
+  };
+  start();
+  // Diagrams carry their own colours, so they have to be re-rendered when the
+  // reader flips the theme rather than restyled by CSS.
+  window.addEventListener("themechange", () => {
+    document.querySelectorAll("pre.mermaid").forEach((el) => {
+      if (el.dataset.src) { el.innerHTML = el.dataset.src; el.removeAttribute("data-processed"); }
+    });
+    start();
+  });
+</script>
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Undoing &amp; recovery · Git Handbook</title>
+<meta name="description" content="reset, revert, restore and checkout distinguished by which of the four areas they touch — plus the reflog, which means you have almost certainly not lost your work.">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231F4E79'/%3E%3Crect x='7' y='8' width='18' height='3' rx='1.5' fill='%23fff'/%3E%3Crect x='7' y='14' width='12' height='3' rx='1.5' fill='%23A9CCEC'/%3E%3Crect x='7' y='20' width='15' height='3' rx='1.5' fill='%237FB2E0'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="style.css">
+<script>
+  // Applied before first paint so the page never flashes the wrong theme.
+  (function () {
+    try {
+      var t = localStorage.getItem("git-handbook:theme");
+      if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+    } catch (e) {}
+  })();
+</script>
+</head>
+<body>
+
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <button class="menu-btn" id="menu-btn" aria-label="Open navigation" aria-expanded="false">☰</button>
+  <a class="brand" href="index.html">Git&nbsp;Handbook</a>
+  <div class="search-wrap">
+    <input id="search" type="search" placeholder="Search the handbook…" autocomplete="off"
+           aria-label="Search" aria-controls="results" aria-expanded="false">
+    <div id="results" class="results" role="listbox" hidden></div>
+  </div>
+  <button class="theme-btn" id="theme-btn" aria-label="Switch theme">◐</button>
+</header>
+
+<div class="shell">
+  <aside class="sidebar" id="sidebar"><div class="nav-group"><div class="nav-group-title">Start here</div><ul><li><a href="index.html">Start here</a></li></ul></div><div class="nav-group"><div class="nav-group-title">How git actually works</div><ul><li><a href="mental-model.html">How git actually works</a></li></ul></div><div class="nav-group"><div class="nav-group-title">Everyday git</div><ul><li><a href="everyday.html">Everyday git</a></li></ul></div><div class="nav-group"><div class="nav-group-title">Branching & merging</div><ul><li><a href="branching.html">Branching & merging</a></li></ul></div><div class="nav-group"><div class="nav-group-title">Undoing & recovery</div><ul><li><a href="undoing.html" class="active">Undoing & recovery</a></li></ul></div><div class="nav-group"><div class="nav-group-title">GitHub & GitLab</div><ul><li><a href="platforms.html">GitHub & GitLab</a></li></ul></div><div class="nav-group"><div class="nav-group-title">Reference</div><ul><li><a href="cheatsheet.html">The cheat sheet</a></li></ul></div></aside>
+
+  <main id="main" class="main">
+    <article class="prose"><h1 id="undoing-and-recovery"><a class="anchor" href="#undoing-and-recovery">#</a>Undoing and recovery</h1><blockquote>
+<p><strong>If you just broke something, start here.</strong> §1 is a lookup table. Read the
+rest afterwards.</p>
+</blockquote>
+<hr>
+<h2 id="1-i-did-x-how-do-i-undo-it"><a class="anchor" href="#1-i-did-x-how-do-i-undo-it">#</a>1 · "I did X, how do I undo it?"</h2><div class="table-scroll"><table><thead><tr><th>What happened</th><th>Do this</th></tr></thead><tbody><tr><td>Edited a file, want the last committed version</td><td><code>git restore &lt;file&gt;</code></td></tr><tr><td>Staged a file, want it unstaged (keep edits)</td><td><code>git restore --staged &lt;file&gt;</code></td></tr><tr><td>Committed, want to change the message</td><td><code>git commit --amend</code></td></tr><tr><td>Committed, forgot a file</td><td>stage it, then <code>git commit --amend --no-edit</code></td></tr><tr><td>Committed, want the commit gone but keep changes</td><td><code>git reset --soft HEAD~1</code></td></tr><tr><td>Committed, want the commit and changes gone</td><td><code>git reset --hard HEAD~1</code> ⚠️</td></tr><tr><td><strong>Pushed</strong>, and need to undo it</td><td><code>git revert &lt;sha&gt;</code> — <strong>not</strong> reset</td></tr><tr><td>Deleted a branch by mistake</td><td><code>git reflog</code>, then <code>git branch &lt;name&gt; &lt;sha&gt;</code></td></tr><tr><td>Reset --hard and lost commits</td><td><code>git reflog</code>, then <code>git reset --hard &lt;sha&gt;</code></td></tr><tr><td>Wrong branch — committed to <code>main</code> instead of a feature</td><td>see §6</td></tr><tr><td>Merge went wrong, not committed yet</td><td><code>git merge --abort</code></td></tr><tr><td>Rebase went wrong, mid-rebase</td><td><code>git rebase --abort</code></td></tr><tr><td>Want a colleague&#39;s single commit</td><td><code>git cherry-pick &lt;sha&gt;</code></td></tr><tr><td>Need to park work briefly</td><td><code>git stash</code> / <code>git stash pop</code></td></tr><tr><td>Truly lost, nothing else worked</td><td><code>git fsck --lost-found</code></td></tr></tbody></table></div><blockquote>
+<p>⚠️ <strong>The only genuinely destructive things</strong> are <code>reset --hard</code> and <code>clean -fd</code>
+<strong>on work that was never committed</strong>. Everything committed is recoverable from
+the reflog for ~90 days.</p>
+</blockquote>
+<hr>
+<h2 id="2-reset-revert-restore-checkout"><a class="anchor" href="#2-reset-revert-restore-checkout">#</a>2 · reset, revert, restore, checkout</h2><p><strong>These four confuse everyone because their names do not say which area they
+touch.</strong> That is the only question that matters.</p>
+<pre class="mermaid">flowchart LR
+    W[&quot;Working&lt;br/&gt;directory&quot;]
+    S[&quot;Staging&lt;br/&gt;area&quot;]
+    L[&quot;Branch&lt;br/&gt;pointer&quot;]
+
+    L -.-&gt;|&quot;reset --soft&quot;| L
+    L -.-&gt;|&quot;reset --mixed&quot;| S
+    L -.-&gt;|&quot;reset --hard&quot;| W
+    S --&gt;|&quot;restore --staged&quot;| W
+    L --&gt;|&quot;restore &amp;lt;file&amp;gt;&quot;| W
+
+    classDef a fill:#e4edf6,stroke:#1f4e79,stroke-width:2px
+    class W,S,L a</pre><div class="table-scroll"><table><thead><tr><th>Command</th><th>Moves branch?</th><th>Touches index?</th><th>Touches working dir?</th></tr></thead><tbody><tr><td><code>reset --soft</code></td><td><strong>yes</strong></td><td>no</td><td>no</td></tr><tr><td><code>reset --mixed</code> <em>(default)</em></td><td><strong>yes</strong></td><td><strong>yes</strong></td><td>no</td></tr><tr><td><code>reset --hard</code></td><td><strong>yes</strong></td><td><strong>yes</strong></td><td><strong>yes</strong> ⚠️</td></tr><tr><td><code>restore &lt;file&gt;</code></td><td>no</td><td>no</td><td><strong>yes</strong></td></tr><tr><td><code>restore --staged &lt;file&gt;</code></td><td>no</td><td><strong>yes</strong></td><td>no</td></tr><tr><td><code>revert &lt;sha&gt;</code></td><td><strong>adds a commit</strong></td><td>—</td><td>—</td></tr></tbody></table></div><p><strong>Verified — the same starting point, the three reset modes:</strong></p>
+<pre class="code"><code>soft    HEAD moved back    staged: a.txt      working: clean
+mixed   HEAD moved back    staged: clean      working: a.txt modified
+hard    HEAD moved back    staged: clean      working: clean</code></pre><blockquote>
+<p><strong>Read that table as a ladder.</strong> <code>--soft</code> moves only the pointer, so your work
+is sitting staged and ready to recommit. <code>--mixed</code> also clears the staging
+area, so the work is in your files but unstaged. <code>--hard</code> also overwrites your
+files — <strong>the only one that can lose uncommitted work.</strong></p>
+</blockquote>
+<h3 id="reset-versus-revert-the-one-that-matters-in-a-team"><a class="anchor" href="#reset-versus-revert-the-one-that-matters-in-a-team">#</a>reset versus revert — the one that matters in a team</h3><pre class="mermaid">flowchart LR
+    subgraph RESET[&quot;git reset --hard HEAD~1  — rewrites history&quot;]
+        direction LR
+        A1[&quot;A&quot;] --&gt; B1[&quot;B&quot;] --&gt; C1[&quot;C ✗ removed&quot;]
+    end
+    subgraph REVERT[&quot;git revert C — adds history&quot;]
+        direction LR
+        A2[&quot;A&quot;] --&gt; B2[&quot;B&quot;] --&gt; C2[&quot;C&quot;] --&gt; D2[&quot;C′ undoes C&quot;]
+    end</pre><div class="table-scroll"><table><thead><tr><th></th><th><code>reset</code></th><th><code>revert</code></th></tr></thead><tbody><tr><td>History</td><td><strong>Rewritten</strong></td><td><strong>Appended</strong></td></tr><tr><td>Safe on pushed commits</td><td><strong>No</strong></td><td><strong>Yes</strong></td></tr><tr><td>Needs force-push</td><td>Yes</td><td>No</td></tr><tr><td>Leaves an audit trail</td><td>No</td><td>Yes</td></tr></tbody></table></div><blockquote>
+<p><strong>Rule: <code>reset</code> for local commits nobody has seen, <code>revert</code> for anything
+pushed.</strong> Force-pushing a shared branch makes everyone else&#39;s history diverge,
+and the usual result is someone force-pushing the old version back and
+destroying your fix.</p>
+</blockquote>
+<hr>
+<h2 id="3-amend-and-its-one-trap"><a class="anchor" href="#3-amend-and-its-one-trap">#</a>3 · Amend — and its one trap</h2><pre class="code"><code class="language-bash">git commit --amend                # change the message
+git add forgotten.txt
+git commit --amend --no-edit      # add a file, keep the message</code></pre><p><strong><code>--amend</code> does not edit a commit.</strong> It creates a <em>new</em> commit with a new hash
+and moves the branch. The original is orphaned but still in the reflog.</p>
+<blockquote>
+<p><strong>The trap: amending after pushing.</strong> The remote has the old commit, you now
+have a different one, and the push is rejected. Amend only what you have not
+pushed — or accept that you need a force-push and that nobody else has pulled.</p>
+</blockquote>
+<hr>
+<h2 id="4-interactive-rebase-cleaning-up-before-you-push"><a class="anchor" href="#4-interactive-rebase-cleaning-up-before-you-push">#</a>4 · Interactive rebase — cleaning up before you push</h2><pre class="code"><code class="language-bash">git rebase -i HEAD~4</code></pre><pre class="code"><code>pick   a1b2c3  add parser
+squash d4e5f6  fix typo          &lt;- fold into the one above
+reword 7g8h9i  add tests         &lt;- edit the message
+drop   j0k1l2  debug logging     &lt;- remove entirely</code></pre><div class="table-scroll"><table><thead><tr><th>Verb</th><th>Does</th></tr></thead><tbody><tr><td><code>pick</code></td><td>Keep as-is</td></tr><tr><td><code>reword</code></td><td>Keep, edit the message</td></tr><tr><td><code>squash</code></td><td>Merge into the previous commit, combine messages</td></tr><tr><td><code>fixup</code></td><td>Like squash, but discard this message</td></tr><tr><td><code>edit</code></td><td>Stop so you can change the content</td></tr><tr><td><code>drop</code></td><td>Delete the commit</td></tr></tbody></table></div><blockquote>
+<p><strong>Interactive rebase is for tidying your own unpushed work</strong>, turning &quot;wip&quot;,
+&quot;wip 2&quot;, &quot;fix&quot; into one reviewable commit. <strong>Never on shared history.</strong></p>
+</blockquote>
+<p><strong>This environment note matters:</strong> interactive rebase opens an editor, so it
+cannot run in a non-interactive shell. Run it in a real terminal.</p>
+<hr>
+<h2 id="5-reflog-the-undo-history-for-your-undo"><a class="anchor" href="#5-reflog-the-undo-history-for-your-undo">#</a>5 · Reflog — the undo history for your undo</h2><p><strong>The single most valuable command in git, and the one most people never learn.</strong></p>
+<pre class="code"><code>$ git reflog
+f55234f HEAD@{0}: reset: moving to f55234f
+e93a576 HEAD@{1}: reset: moving to HEAD~1
+f55234f HEAD@{2}: commit: third
+...</code></pre><p><strong>The reflog records every position HEAD has held</strong> — every commit, checkout,
+reset, merge and rebase — with a default expiry of about 90 days.</p>
+<pre class="code"><code class="language-bash">git reflog                        # find the sha you want back
+git reset --hard &lt;sha&gt;            # go back to it
+git branch rescue &lt;sha&gt;           # or park it on a new branch, safer</code></pre><blockquote>
+<p><strong>This is why &quot;I lost my work&quot; is almost always false.</strong> A <code>reset --hard</code> that
+destroyed three commits did not delete them; it moved a pointer. The commits
+sit in <code>.git/objects</code> until garbage collection, and the reflog still knows
+their hashes.</p>
+<p><strong>The genuine exception:</strong> changes never committed at all. The reflog tracks
+commits, so uncommitted edits wiped by <code>reset --hard</code> or <code>git clean -fd</code> are
+gone. <strong>Commit early — even a bad commit is recoverable, an uncommitted edit
+is not.</strong></p>
+</blockquote>
+<hr>
+<h2 id="6-common-situations-worked"><a class="anchor" href="#6-common-situations-worked">#</a>6 · Common situations, worked</h2><h3 id="committed-to-the-wrong-branch"><a class="anchor" href="#committed-to-the-wrong-branch">#</a>Committed to the wrong branch</h3><pre class="code"><code class="language-bash">git branch feature          # 1. label the commits where they are
+git reset --hard origin/main   # 2. put main back where it belongs
+git checkout feature        # 3. carry on</code></pre><p><strong>Do step 1 first.</strong> Creating the branch is what keeps the commits reachable
+before you move <code>main</code>.</p>
+<h3 id="need-to-pull-but-have-local-edits"><a class="anchor" href="#need-to-pull-but-have-local-edits">#</a>Need to pull, but have local edits</h3><pre class="code"><code class="language-bash">git stash
+git pull
+git stash pop              # conflicts possible here -- resolve as usual</code></pre><h3 id="squash-a-messy-branch-into-one-commit"><a class="anchor" href="#squash-a-messy-branch-into-one-commit">#</a>Squash a messy branch into one commit</h3><pre class="code"><code class="language-bash">git reset --soft $(git merge-base HEAD main)
+git commit -m &quot;one clean commit&quot;</code></pre><p><strong><code>--soft</code> back to where the branch diverged</strong> leaves every change staged, ready
+to commit once.</p>
+<h3 id="recover-a-deleted-branch"><a class="anchor" href="#recover-a-deleted-branch">#</a>Recover a deleted branch</h3><pre class="code"><code class="language-bash">git reflog | grep &lt;branch-name&gt;
+git branch &lt;branch-name&gt; &lt;sha&gt;</code></pre><h3 id="truly-lost-nothing-in-the-reflog"><a class="anchor" href="#truly-lost-nothing-in-the-reflog">#</a>Truly lost — nothing in the reflog</h3><pre class="code"><code class="language-bash">git fsck --lost-found</code></pre><p>Finds unreachable objects. Slow, ugly, and it has genuinely saved people.</p>
+<hr>
+<h2 id="7-force-push-safely"><a class="anchor" href="#7-force-push-safely">#</a>7 · Force-push safely</h2><pre class="code"><code class="language-bash">git push --force-with-lease       # ✅
+git push --force                  # ⚠️ never</code></pre><blockquote>
+<p><strong><code>--force-with-lease</code> refuses to push if the remote has moved since your last
+fetch.</strong> Plain <code>--force</code> overwrites unconditionally — including the commit a
+colleague pushed thirty seconds ago, which then exists nowhere.</p>
+<p><strong>Make it the default:</strong> <code>git config --global alias.pushf &quot;push --force-with-lease&quot;</code></p>
+</blockquote>
+<hr>
+<h2 id="8-interview-questions"><a class="anchor" href="#8-interview-questions">#</a>8 · Interview questions</h2><div class="table-scroll"><table><thead><tr><th>Question</th><th>Answer</th></tr></thead><tbody><tr><td>⭐ &quot;reset vs revert?&quot;</td><td>Reset moves the branch pointer, rewriting history — fine locally, dangerous once pushed. Revert adds a new commit that undoes an old one, so history is append-only and safe to share. Pushed means revert.</td></tr><tr><td>⭐ &quot;What do the three reset modes do?&quot;</td><td>All three move the branch. <code>--soft</code> stops there, leaving your work staged. <code>--mixed</code> also resets the index, leaving work unstaged. <code>--hard</code> also overwrites the working directory — the only one that can lose uncommitted work.</td></tr><tr><td>⭐ &quot;You reset --hard and lost three commits.&quot;</td><td>They are not lost. <code>git reflog</code> lists every position HEAD held, so find the sha and either reset back to it or, more safely, create a branch at it. Objects survive until gc, roughly 90 days.</td></tr><tr><td>&quot;What can you actually lose?&quot;</td><td>Only work that was never committed. The reflog tracks commits, so uncommitted edits destroyed by <code>reset --hard</code> or <code>clean -fd</code> are unrecoverable. That is the argument for committing early and often.</td></tr><tr><td>⭐ &quot;Why <code>--force-with-lease</code>?&quot;</td><td>It fails if the remote moved since your last fetch, so you cannot silently overwrite someone&#39;s push. Plain <code>--force</code> will happily destroy a commit that exists nowhere else.</td></tr><tr><td>&quot;What does <code>--amend</code> do?&quot;</td><td>Creates a new commit replacing the current one and moves the branch. The original is orphaned but reflog-recoverable. Safe before pushing; a force-push afterwards.</td></tr></tbody></table></div><hr>
+<h2 id="stop-condition"><a class="anchor" href="#stop-condition">#</a>Stop condition</h2><p>You can handle trouble when you can:</p>
+<ol>
+<li>say which of the four areas each of reset/restore/revert touches,</li>
+<li>choose reset or revert based on whether it was pushed,</li>
+<li>use the reflog to recover a hard reset,</li>
+<li>state exactly what is unrecoverable, and</li>
+<li>explain why <code>--force-with-lease</code> beats <code>--force</code>.</li>
+</ol>
+</article>
+    <div class="pager-row"><a class="pager previous" href="branching.html"><span>previous</span>Branching & merging</a><a class="pager next" href="platforms.html"><span>next</span>GitHub & GitLab</a></div>
+  </main>
+
+  <nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><ul><li class="d2"><a href="#1-i-did-x-how-do-i-undo-it">1 · &quot;I did X, how do I undo it?&quot;</a></li><li class="d2"><a href="#2-reset-revert-restore-checkout">2 · reset, revert, restore, checkout</a></li><li class="d3"><a href="#reset-versus-revert-the-one-that-matters-in-a-team">reset versus revert — the one that matters in a team</a></li><li class="d2"><a href="#3-amend-and-its-one-trap">3 · Amend — and its one trap</a></li><li class="d2"><a href="#4-interactive-rebase-cleaning-up-before-you-push">4 · Interactive rebase — cleaning up before you push</a></li><li class="d2"><a href="#5-reflog-the-undo-history-for-your-undo">5 · Reflog — the undo history for your undo</a></li><li class="d2"><a href="#6-common-situations-worked">6 · Common situations, worked</a></li><li class="d3"><a href="#committed-to-the-wrong-branch">Committed to the wrong branch</a></li><li class="d3"><a href="#need-to-pull-but-have-local-edits">Need to pull, but have local edits</a></li><li class="d3"><a href="#squash-a-messy-branch-into-one-commit">Squash a messy branch into one commit</a></li><li class="d3"><a href="#recover-a-deleted-branch">Recover a deleted branch</a></li><li class="d3"><a href="#truly-lost-nothing-in-the-reflog">Truly lost — nothing in the reflog</a></li><li class="d2"><a href="#7-force-push-safely">7 · Force-push safely</a></li><li class="d2"><a href="#8-interview-questions">8 · Interview questions</a></li><li class="d2"><a href="#stop-condition">Stop condition</a></li></ul></nav>
+</div>
+
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  window.__mermaid = mermaid;
+  const dark = () => {
+    const explicit = document.documentElement.getAttribute("data-theme");
+    if (explicit) return explicit === "dark";
+    return matchMedia("(prefers-color-scheme: dark)").matches;
+  };
+  const start = () => {
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: dark() ? "dark" : "neutral",
+      securityLevel: "strict",
+      fontFamily: "IBM Plex Sans, system-ui, sans-serif",
+    });
+    mermaid.run({ querySelector: "pre.mermaid" });
+  };
+  start();
+  // Diagrams carry their own colours, so they have to be re-rendered when the
+  // reader flips the theme rather than restyled by CSS.
+  window.addEventListener("themechange", () => {
+    document.querySelectorAll("pre.mermaid").forEach((el) => {
+      if (el.dataset.src) { el.innerHTML = el.dataset.src; el.removeAttribute("data-processed"); }
+    });
+    start();
+  });
+</script>
+<script src="app.js"></script>
+</body>
+</html>

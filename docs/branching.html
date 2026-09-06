@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Branching &amp; merging · Git Handbook</title>
+<meta name="description" content="The three ways histories combine, when each is right, how conflicts actually work, and the branching strategies worth knowing.">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231F4E79'/%3E%3Crect x='7' y='8' width='18' height='3' rx='1.5' fill='%23fff'/%3E%3Crect x='7' y='14' width='12' height='3' rx='1.5' fill='%23A9CCEC'/%3E%3Crect x='7' y='20' width='15' height='3' rx='1.5' fill='%237FB2E0'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="style.css">
+<script>
+  // Applied before first paint so the page never flashes the wrong theme.
+  (function () {
+    try {
+      var t = localStorage.getItem("git-handbook:theme");
+      if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+    } catch (e) {}
+  })();
+</script>
+</head>
+<body>
+
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <button class="menu-btn" id="menu-btn" aria-label="Open navigation" aria-expanded="false">☰</button>
+  <a class="brand" href="index.html">Git&nbsp;Handbook</a>
+  <div class="search-wrap">
+    <input id="search" type="search" placeholder="Search the handbook…" autocomplete="off"
+           aria-label="Search" aria-controls="results" aria-expanded="false">
+    <div id="results" class="results" role="listbox" hidden></div>
+  </div>
+  <button class="theme-btn" id="theme-btn" aria-label="Switch theme">◐</button>
+</header>
+
+<div class="shell">
+  <aside class="sidebar" id="sidebar"><div class="nav-group"><div class="nav-group-title">Start here</div><ul><li><a href="index.html">Start here</a></li></ul></div><div class="nav-group"><div class="nav-group-title">How git actually works</div><ul><li><a href="mental-model.html">How git actually works</a></li></ul></div><div class="nav-group"><div class="nav-group-title">Everyday git</div><ul><li><a href="everyday.html">Everyday git</a></li></ul></div><div class="nav-group"><div class="nav-group-title">Branching & merging</div><ul><li><a href="branching.html" class="active">Branching & merging</a></li></ul></div><div class="nav-group"><div class="nav-group-title">Undoing & recovery</div><ul><li><a href="undoing.html">Undoing & recovery</a></li></ul></div><div class="nav-group"><div class="nav-group-title">GitHub & GitLab</div><ul><li><a href="platforms.html">GitHub & GitLab</a></li></ul></div><div class="nav-group"><div class="nav-group-title">Reference</div><ul><li><a href="cheatsheet.html">The cheat sheet</a></li></ul></div></aside>
+
+  <main id="main" class="main">
+    <article class="prose"><h1 id="branching-and-merging"><a class="anchor" href="#branching-and-merging">#</a>Branching and merging</h1><blockquote>
+<p><strong>A branch is a pointer.</strong> Everything difficult here is about what happens
+when two pointers have diverged and you want one history again.</p>
+</blockquote>
+<hr>
+<h2 id="1-three-ways-to-combine"><a class="anchor" href="#1-three-ways-to-combine">#</a>1 · Three ways to combine</h2><pre class="mermaid">gitGraph
+    commit id: &quot;A&quot;
+    commit id: &quot;B&quot;
+    branch feature
+    commit id: &quot;C&quot;
+    commit id: &quot;D&quot;
+    checkout main
+    commit id: &quot;E&quot;
+    merge feature id: &quot;M&quot;</pre><div class="table-scroll"><table><thead><tr><th></th><th>Fast-forward</th><th>Merge commit</th><th>Rebase</th></tr></thead><tbody><tr><td><strong>When possible</strong></td><td>Target hasn&#39;t moved</td><td>Always</td><td>Always</td></tr><tr><td><strong>New commit?</strong></td><td>None</td><td>One, with two parents</td><td>New copies of each commit</td></tr><tr><td><strong>History shape</strong></td><td>Straight line</td><td>Branching, then joining</td><td>Straight line</td></tr><tr><td><strong>Preserves original hashes</strong></td><td>Yes</td><td>Yes</td><td><strong>No</strong></td></tr><tr><td><strong>Shows that a branch existed</strong></td><td>No</td><td><strong>Yes</strong></td><td>No</td></tr><tr><td><strong>Safe on shared branches</strong></td><td>Yes</td><td>Yes</td><td><strong>No</strong></td></tr></tbody></table></div><h3 id="fast-forward"><a class="anchor" href="#fast-forward">#</a>Fast-forward</h3><p>If <code>main</code> has not moved since you branched, git can just slide the pointer
+forward. <strong>No merge commit, no possible conflict.</strong></p>
+<pre class="code"><code class="language-bash">git merge feature            # fast-forwards when it can
+git merge --no-ff feature    # force a merge commit anyway</code></pre><p><strong><code>--no-ff</code> is worth knowing:</strong> it keeps a visible record that a feature branch
+existed, which some teams want for auditability.</p>
+<h3 id="merge"><a class="anchor" href="#merge">#</a>Merge</h3><p>Creates a commit with <strong>two parents</strong>. Nothing is rewritten; both histories
+survive exactly as they were.</p>
+<h3 id="rebase"><a class="anchor" href="#rebase">#</a>Rebase</h3><p>Replays your commits on top of the target, <strong>creating new commits with new
+hashes</strong>.</p>
+<pre class="code"><code class="language-bash">git rebase main              # move my branch onto the current main</code></pre><blockquote>
+<p><strong>Rebase does not move commits — it copies them.</strong> The originals stay in the
+object store until gc, which is why the reflog can undo a bad rebase. It is
+also why the hashes change, and therefore why rebasing shared history is
+destructive: your teammate&#39;s copy and yours are now different objects.</p>
+</blockquote>
+<hr>
+<h2 id="2-the-rule"><a class="anchor" href="#2-the-rule">#</a>2 · The rule</h2><blockquote>
+<p><strong>Rebase your own unpushed work. Merge everything else.</strong></p>
+</blockquote>
+<div class="table-scroll"><table><thead><tr><th>Situation</th><th>Do</th></tr></thead><tbody><tr><td>My local branch is behind <code>main</code></td><td><strong>Rebase</strong> — keeps history linear</td></tr><tr><td>Tidying my commits before a PR</td><td><strong>Rebase -i</strong> — squash the &quot;wip&quot; noise</td></tr><tr><td>Bringing a reviewed feature into <code>main</code></td><td><strong>Merge</strong> (often squash-merge)</td></tr><tr><td>Someone else has the branch too</td><td><strong>Merge.</strong> Never rebase</td></tr><tr><td><code>main</code> into my long-lived branch</td><td>Merge, or rebase if you are the only one on it</td></tr></tbody></table></div><p><strong>The Golden Rule of Rebasing:</strong> <em>never rebase commits that exist outside your
+repository.</em> If it has been pushed and anyone may have pulled it, merge.</p>
+<hr>
+<h2 id="3-conflicts"><a class="anchor" href="#3-conflicts">#</a>3 · Conflicts</h2><p><strong>A conflict is not an error.</strong> It means two changes touched the same region and
+git will not guess.</p>
+<pre class="code"><code>&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD
+the version on the branch you are ON
+=======
+the version being merged IN
+&gt;&gt;&gt;&gt;&gt;&gt;&gt; feature</code></pre><pre class="code"><code class="language-bash"># 1. see what conflicts
+git status
+
+# 2. edit the files -- remove ALL the markers
+# 3. mark resolved
+git add &lt;file&gt;
+
+# 4. finish
+git commit          # for merge
+git rebase --continue   # for rebase</code></pre><div class="table-scroll"><table><thead><tr><th>Escape hatch</th><th>Command</th></tr></thead><tbody><tr><td>Abandon a merge</td><td><code>git merge --abort</code></td></tr><tr><td>Abandon a rebase</td><td><code>git rebase --abort</code></td></tr><tr><td>Take their whole file</td><td><code>git checkout --theirs &lt;file&gt;</code></td></tr><tr><td>Take my whole file</td><td><code>git checkout --ours &lt;file&gt;</code></td></tr></tbody></table></div><blockquote>
+<p><strong>During a rebase, &quot;ours&quot; and &quot;theirs&quot; are reversed from what you expect.</strong>
+Rebase replays <em>your</em> commits onto the target, so the target is &quot;ours&quot; and
+your commit is &quot;theirs&quot;. This catches everyone once — check with
+<code>git status</code> rather than guessing.</p>
+</blockquote>
+<p><strong><code>rerere</code></strong> (reuse recorded resolution) is worth enabling if you rebase long
+branches repeatedly — git remembers how you resolved a conflict and reapplies it:</p>
+<pre class="code"><code class="language-bash">git config --global rerere.enabled true</code></pre><hr>
+<h2 id="4-branching-strategies"><a class="anchor" href="#4-branching-strategies">#</a>4 · Branching strategies</h2><div class="table-scroll"><table><thead><tr><th>Strategy</th><th>Branches</th><th>Good for</th><th>Cost</th></tr></thead><tbody><tr><td><strong>Trunk-based</strong></td><td><code>main</code> + very short-lived</td><td>CI/CD, frequent deploys</td><td>Needs feature flags and good tests</td></tr><tr><td><strong>GitHub flow</strong></td><td><code>main</code> + feature branches, PR to merge</td><td>Most teams, web services</td><td>Little; the sensible default</td></tr><tr><td><strong>Git flow</strong></td><td><code>main</code>, <code>develop</code>, <code>feature/*</code>, <code>release/*</code>, <code>hotfix/*</code></td><td>Versioned software with support branches</td><td><strong>Heavy</strong> — often more ceremony than value</td></tr><tr><td><strong>Release branches</strong></td><td><code>main</code> + <code>release/x.y</code></td><td>Software you must patch old versions of</td><td>Cherry-picking between branches</td></tr></tbody></table></div><blockquote>
+<p><strong>Most teams should use GitHub flow and most who use git flow do not need
+it.</strong> Git flow was designed for shipping versioned desktop software with
+parallel supported releases. If you deploy from <code>main</code> several times a week,
+<code>develop</code> is an extra merge that buys nothing.</p>
+</blockquote>
+<p><strong>Long-lived branches are the real problem</strong>, whatever the strategy. A branch
+open for three weeks accumulates conflicts superlinearly. <strong>Merge <code>main</code> in
+often, or keep branches under a few days.</strong></p>
+<hr>
+<h2 id="5-squash-merge-or-rebase-on-the-pr-button"><a class="anchor" href="#5-squash-merge-or-rebase-on-the-pr-button">#</a>5 · Squash, merge, or rebase on the PR button</h2><p>GitHub and GitLab offer three merge buttons. They are not interchangeable.</p>
+<div class="table-scroll"><table><thead><tr><th>Button</th><th>Result on <code>main</code></th><th>Use when</th></tr></thead><tbody><tr><td><strong>Create a merge commit</strong></td><td>Every branch commit, plus a merge commit</td><td>You want the full development record</td></tr><tr><td><strong>Squash and merge</strong></td><td><strong>One commit</strong> containing everything</td><td><strong>The usual default</strong> — the branch&#39;s &quot;wip&quot; commits are noise</td></tr><tr><td><strong>Rebase and merge</strong></td><td>Each commit replayed, no merge commit</td><td>You curated the commits and each is meaningful</td></tr></tbody></table></div><blockquote>
+<p><strong>Squash-merge is the right default for most teams.</strong> It makes <code>main</code> a clean
+list of features, each revertible in one command, and it stops
+&quot;fix typo&quot; appearing in the permanent history. The trade-off: you lose the
+fine-grained history of how the feature was built — which is usually not worth
+preserving.</p>
+</blockquote>
+<hr>
+<h2 id="6-interview-questions"><a class="anchor" href="#6-interview-questions">#</a>6 · Interview questions</h2><div class="table-scroll"><table><thead><tr><th>Question</th><th>Answer</th></tr></thead><tbody><tr><td>⭐ &quot;Merge or rebase?&quot;</td><td>Rebase my own unpushed work to keep history linear; merge anything shared. Rebase copies commits with new hashes, so rebasing pushed history makes everyone else&#39;s copies diverge.</td></tr><tr><td>⭐ &quot;What is a fast-forward?&quot;</td><td>When the target hasn&#39;t moved since you branched, git slides the pointer forward — no merge commit and no possible conflict. <code>--no-ff</code> forces one anyway if you want the branch recorded.</td></tr><tr><td>&quot;What actually causes a conflict?&quot;</td><td>Two changes to the same region of the same file with no common resolution. Git marks the region and refuses to guess. It is not an error state — abort or resolve.</td></tr><tr><td>⭐ &quot;Why are ours/theirs swapped in a rebase?&quot;</td><td>Because rebase replays your commits onto the target, so the target is the current checkout — &quot;ours&quot; — and your commit is being applied — &quot;theirs&quot;.</td></tr><tr><td>&quot;Which merge button?&quot;</td><td>Squash by default: <code>main</code> becomes one clean commit per feature, each revertible. Merge commit if the branch history matters. Rebase-and-merge only if every commit was curated.</td></tr><tr><td>&quot;Git flow or trunk-based?&quot;</td><td>Trunk-based or GitHub flow for anything deployed continuously. Git flow suits versioned software with supported old releases; using it for a web service is ceremony without benefit.</td></tr></tbody></table></div><hr>
+<h2 id="stop-condition"><a class="anchor" href="#stop-condition">#</a>Stop condition</h2><p>You have this when you can:</p>
+<ol>
+<li>explain what fast-forward, merge and rebase each do to the graph,</li>
+<li>state the golden rule of rebasing and why hashes change,</li>
+<li>resolve a conflict and abort one,</li>
+<li>explain the ours/theirs inversion during rebase, and</li>
+<li>choose a merge button with a reason.</li>
+</ol>
+</article>
+    <div class="pager-row"><a class="pager previous" href="everyday.html"><span>previous</span>Everyday git</a><a class="pager next" href="undoing.html"><span>next</span>Undoing & recovery</a></div>
+  </main>
+
+  <nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><ul><li class="d2"><a href="#1-three-ways-to-combine">1 · Three ways to combine</a></li><li class="d3"><a href="#fast-forward">Fast-forward</a></li><li class="d3"><a href="#merge">Merge</a></li><li class="d3"><a href="#rebase">Rebase</a></li><li class="d2"><a href="#2-the-rule">2 · The rule</a></li><li class="d2"><a href="#3-conflicts">3 · Conflicts</a></li><li class="d2"><a href="#4-branching-strategies">4 · Branching strategies</a></li><li class="d2"><a href="#5-squash-merge-or-rebase-on-the-pr-button">5 · Squash, merge, or rebase on the PR button</a></li><li class="d2"><a href="#6-interview-questions">6 · Interview questions</a></li><li class="d2"><a href="#stop-condition">Stop condition</a></li></ul></nav>
+</div>
+
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  window.__mermaid = mermaid;
+  const dark = () => {
+    const explicit = document.documentElement.getAttribute("data-theme");
+    if (explicit) return explicit === "dark";
+    return matchMedia("(prefers-color-scheme: dark)").matches;
+  };
+  const start = () => {
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: dark() ? "dark" : "neutral",
+      securityLevel: "strict",
+      fontFamily: "IBM Plex Sans, system-ui, sans-serif",
+    });
+    mermaid.run({ querySelector: "pre.mermaid" });
+  };
+  start();
+  // Diagrams carry their own colours, so they have to be re-rendered when the
+  // reader flips the theme rather than restyled by CSS.
+  window.addEventListener("themechange", () => {
+    document.querySelectorAll("pre.mermaid").forEach((el) => {
+      if (el.dataset.src) { el.innerHTML = el.dataset.src; el.removeAttribute("data-processed"); }
+    });
+    start();
+  });
+</script>
+<script src="app.js"></script>
+</body>
+</html>

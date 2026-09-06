@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How git actually works · Git Handbook</title>
+<meta name="description" content="Blobs, trees, commits and refs — with real hashes from a real repository, and why understanding four object types makes every command obvious.">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231F4E79'/%3E%3Crect x='7' y='8' width='18' height='3' rx='1.5' fill='%23fff'/%3E%3Crect x='7' y='14' width='12' height='3' rx='1.5' fill='%23A9CCEC'/%3E%3Crect x='7' y='20' width='15' height='3' rx='1.5' fill='%237FB2E0'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="style.css">
+<script>
+  // Applied before first paint so the page never flashes the wrong theme.
+  (function () {
+    try {
+      var t = localStorage.getItem("git-handbook:theme");
+      if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+    } catch (e) {}
+  })();
+</script>
+</head>
+<body>
+
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <button class="menu-btn" id="menu-btn" aria-label="Open navigation" aria-expanded="false">☰</button>
+  <a class="brand" href="index.html">Git&nbsp;Handbook</a>
+  <div class="search-wrap">
+    <input id="search" type="search" placeholder="Search the handbook…" autocomplete="off"
+           aria-label="Search" aria-controls="results" aria-expanded="false">
+    <div id="results" class="results" role="listbox" hidden></div>
+  </div>
+  <button class="theme-btn" id="theme-btn" aria-label="Switch theme">◐</button>
+</header>
+
+<div class="shell">
+  <aside class="sidebar" id="sidebar"><div class="nav-group"><div class="nav-group-title">Start here</div><ul><li><a href="index.html">Start here</a></li></ul></div><div class="nav-group"><div class="nav-group-title">How git actually works</div><ul><li><a href="mental-model.html" class="active">How git actually works</a></li></ul></div><div class="nav-group"><div class="nav-group-title">Everyday git</div><ul><li><a href="everyday.html">Everyday git</a></li></ul></div><div class="nav-group"><div class="nav-group-title">Branching & merging</div><ul><li><a href="branching.html">Branching & merging</a></li></ul></div><div class="nav-group"><div class="nav-group-title">Undoing & recovery</div><ul><li><a href="undoing.html">Undoing & recovery</a></li></ul></div><div class="nav-group"><div class="nav-group-title">GitHub & GitLab</div><ul><li><a href="platforms.html">GitHub & GitLab</a></li></ul></div><div class="nav-group"><div class="nav-group-title">Reference</div><ul><li><a href="cheatsheet.html">The cheat sheet</a></li></ul></div></aside>
+
+  <main id="main" class="main">
+    <article class="prose"><h1 id="how-git-actually-works"><a class="anchor" href="#how-git-actually-works">#</a>How git actually works</h1><blockquote>
+<p><strong>Git is a content-addressed key-value store with a commit graph on top.</strong>
+That is the whole thing. Once you can see the objects, every command becomes
+readable.</p>
+</blockquote>
+<p><strong>Every hash and every output below came from an actual repository</strong>, not from
+memory.</p>
+<hr>
+<h2 id="1-four-object-types"><a class="anchor" href="#1-four-object-types">#</a>1 · Four object types</h2><pre class="mermaid">flowchart TD
+    C[&quot;&lt;b&gt;commit&lt;/b&gt;&lt;br/&gt;points to one tree&lt;br/&gt;+ parent commit(s)&lt;br/&gt;+ author, message&quot;] --&gt; T[&quot;&lt;b&gt;tree&lt;/b&gt;&lt;br/&gt;a directory listing:&lt;br/&gt;names → blobs and trees&quot;]
+    T --&gt; B1[&quot;&lt;b&gt;blob&lt;/b&gt;&lt;br/&gt;file contents&lt;br/&gt;no name, no metadata&quot;]
+    T --&gt; T2[&quot;&lt;b&gt;tree&lt;/b&gt;&lt;br/&gt;a subdirectory&quot;]
+    TAG[&quot;&lt;b&gt;tag&lt;/b&gt;&lt;br/&gt;a named pointer&lt;br/&gt;+ optional message&quot;] --&gt; C
+
+    classDef o fill:#e4edf6,stroke:#1f4e79,stroke-width:2px
+    class C,T,B1,T2,TAG o</pre><div class="table-scroll"><table><thead><tr><th>Object</th><th>Holds</th><th>Does <strong>not</strong> hold</th></tr></thead><tbody><tr><td><strong>blob</strong></td><td>File contents</td><td>The filename, permissions, or any history</td></tr><tr><td><strong>tree</strong></td><td>Names → blobs/trees, plus modes</td><td>Contents</td></tr><tr><td><strong>commit</strong></td><td>One tree + parents + author + message</td><td>Any diff</td></tr><tr><td><strong>tag</strong></td><td>A pointer to an object, plus a message</td><td>—</td></tr></tbody></table></div><hr>
+<h2 id="2-watch-it-happen"><a class="anchor" href="#2-watch-it-happen">#</a>2 · Watch it happen</h2><p>A fresh repository, one file containing <code>hello</code>:</p>
+<pre class="code"><code>$ echo &quot;hello&quot; &gt; a.txt
+$ git hash-object a.txt
+ce013625030ba8dba906f756967f9e9ca394464a</code></pre><p><strong>That hash is computed from the content alone</strong>, before anything is committed —
+and it is the same on every machine on earth for the same bytes. That is what
+&quot;content-addressed&quot; means.</p>
+<pre class="code"><code>$ git add a.txt
+$ git ls-files -s
+100644 ce013625030ba8dba906f756967f9e9ca394464a 0   a.txt</code></pre><p><strong>The staging area is literally a list of blob hashes with filenames.</strong> Adding a
+file writes the blob into the object store and records the hash here.</p>
+<pre class="code"><code>$ git commit -m &quot;first&quot;
+$ git cat-file -p HEAD
+tree 2e81171448eb9f2ee3821e3d447aa6b2fe3ddba1
+author T &lt;t@t&gt; 1788714639 +0530
+committer T &lt;t@t&gt; 1788714639 +0530
+
+first</code></pre><p><strong>A commit is five lines of text.</strong> A tree hash, an author, a committer, and a
+message. Note what is absent: <strong>no diff, and no filename</strong>.</p>
+<pre class="code"><code>$ git cat-file -p HEAD^{tree}
+100644 blob ce013625030ba8dba906f756967f9e9ca394464a    a.txt
+
+$ git cat-file -p HEAD:a.txt
+hello</code></pre><p><strong>The tree supplies the name; the blob supplies the content.</strong> That separation
+is why renaming a file creates no new blob — the content is unchanged, so only
+the tree differs.</p>
+<pre class="code"><code>$ git cat-file -t HEAD          -&gt; commit
+$ git cat-file -t HEAD^{tree}   -&gt; tree
+$ git cat-file -t HEAD:a.txt    -&gt; blob</code></pre><hr>
+<h2 id="3-three-consequences-that-matter"><a class="anchor" href="#3-three-consequences-that-matter">#</a>3 · Three consequences that matter</h2><h3 id="a-commit-is-a-snapshot-not-a-diff"><a class="anchor" href="#a-commit-is-a-snapshot-not-a-diff">#</a>A commit is a snapshot, not a diff</h3><p>Every commit points to a <strong>complete tree</strong> of the project. Git does not store
+&quot;lines changed&quot;; it computes those on demand when you ask for a diff.</p>
+<blockquote>
+<p><strong>This is why <code>git checkout</code> of an old commit is fast</strong> regardless of how much
+history there is — it is one tree read, not a replay of a thousand patches.
+And it is why identical files across a thousand commits cost one blob: same
+content, same hash, stored once.</p>
+</blockquote>
+<h3 id="a-branch-is-a-40-character-file"><a class="anchor" href="#a-branch-is-a-40-character-file">#</a>A branch is a 40-character file</h3><pre class="code"><code>.git/refs/heads/main   -&gt;  f55234f1a...</code></pre><p>That is all a branch is. <strong>Creating one writes 41 bytes. Deleting one deletes no
+data</strong> — it only removes a pointer, and the commits remain reachable through the
+reflog until garbage collection.</p>
+<p><strong>HEAD</strong> is one more pointer, usually pointing <em>at a branch</em> rather than at a
+commit:</p>
+<pre class="code"><code>.git/HEAD  -&gt;  ref: refs/heads/main</code></pre><p><strong>&quot;Detached HEAD&quot; simply means HEAD points straight at a commit</strong> instead of at
+a branch. Nothing is broken; there is just no branch to move when you commit,
+which is why new commits there become unreachable if you leave.</p>
+<h3 id="history-is-a-dag-not-a-line"><a class="anchor" href="#history-is-a-dag-not-a-line">#</a>History is a DAG, not a line</h3><pre class="mermaid">gitGraph
+    commit id: &quot;A&quot;
+    commit id: &quot;B&quot;
+    branch feature
+    commit id: &quot;C&quot;
+    commit id: &quot;D&quot;
+    checkout main
+    commit id: &quot;E&quot;
+    merge feature id: &quot;M&quot;
+    commit id: &quot;F&quot;</pre><p>Each commit records its <strong>parents</strong>. A normal commit has one; a merge commit has
+two or more; the first commit has none. <strong>The graph is the history</strong> — branches
+are just labels on nodes.</p>
+<hr>
+<h2 id="4-why-this-makes-commands-obvious"><a class="anchor" href="#4-why-this-makes-commands-obvious">#</a>4 · Why this makes commands obvious</h2><div class="table-scroll"><table><thead><tr><th>Command</th><th>What it does to objects</th></tr></thead><tbody><tr><td><code>git add</code></td><td>Writes blobs; updates the index</td></tr><tr><td><code>git commit</code></td><td>Writes a tree from the index, writes a commit pointing at it, moves the branch</td></tr><tr><td><code>git branch x</code></td><td>Writes 41 bytes to <code>refs/heads/x</code></td></tr><tr><td><code>git checkout x</code></td><td>Points HEAD at <code>x</code>; rewrites the working directory from its tree</td></tr><tr><td><code>git merge</code></td><td>Writes a commit with <strong>two</strong> parents</td></tr><tr><td><code>git rebase</code></td><td>Writes <strong>new</strong> commits with different parents; the originals still exist</td></tr><tr><td><code>git reset</code></td><td><strong>Moves the branch pointer.</strong> Optionally also the index and working directory</td></tr><tr><td><code>git cherry-pick</code></td><td>Applies one commit&#39;s change as a <strong>new</strong> commit</td></tr></tbody></table></div><blockquote>
+<p><strong>Notice that <code>rebase</code> and <code>cherry-pick</code> create new objects rather than moving
+old ones.</strong> That is why a rebased commit has a different hash, and why
+rebasing shared history forces everyone else to reconcile — their commits and
+yours are now genuinely different objects with the same content.</p>
+</blockquote>
+<hr>
+<h2 id="5-the-git-directory"><a class="anchor" href="#5-the-git-directory">#</a>5 · The `.git` directory</h2><pre class="code"><code>.git/
+  HEAD              -&gt; which branch you are on
+  index             -&gt; the staging area
+  objects/          -&gt; every blob, tree, commit, tag
+  refs/heads/       -&gt; local branches
+  refs/remotes/     -&gt; your last-known state of remote branches
+  refs/tags/        -&gt; tags
+  logs/HEAD         -&gt; the REFLOG: everywhere HEAD has been
+  config            -&gt; this repo&#39;s settings</code></pre><p><strong><code>refs/remotes/origin/main</code> is not the remote.</strong> It is your <em>cached snapshot</em>
+of it, updated only by <code>fetch</code> (or <code>pull</code>, which fetches then merges).</p>
+<blockquote>
+<p><strong>This explains the most common confusion in git:</strong> <code>origin/main</code> can be
+stale. If a colleague pushed five minutes ago and you have not fetched, your
+<code>origin/main</code> still points at the old commit. <strong><code>git fetch</code> is always safe</strong> —
+it only updates that cache and touches nothing else.</p>
+</blockquote>
+<hr>
+<h2 id="6-interview-questions"><a class="anchor" href="#6-interview-questions">#</a>6 · Interview questions</h2><div class="table-scroll"><table><thead><tr><th>Question</th><th>Answer</th></tr></thead><tbody><tr><td>⭐ &quot;What is a commit?&quot;</td><td>An object holding one tree hash, its parent commit hashes, author/committer, and a message. It is a full snapshot; diffs are computed on demand, never stored.</td></tr><tr><td>⭐ &quot;What is a branch?&quot;</td><td>A file containing a commit hash. Creating and deleting branches is essentially free, and deleting one removes no commits.</td></tr><tr><td>&quot;How does git deduplicate?&quot;</td><td>Content addressing. An object&#39;s name is the SHA-1 of its content, so identical content across any number of commits is stored once.</td></tr><tr><td>⭐ &quot;Why does rebase change hashes?&quot;</td><td>A commit&#39;s hash covers its parents, so replaying it onto a new parent produces a different object. The original still exists until gc, which is why the reflog can recover it.</td></tr><tr><td>&quot;What is detached HEAD?&quot;</td><td>HEAD points directly at a commit rather than at a branch. Committing there works, but no branch moves — so those commits become unreachable when you leave, and you recover them from the reflog.</td></tr><tr><td>⭐ &quot;Difference between <code>origin/main</code> and <code>main</code>?&quot;</td><td><code>main</code> is your branch. <code>origin/main</code> is your <strong>cached</strong> view of the remote from your last fetch, and it can be stale. Fetch updates the cache and changes nothing else.</td></tr></tbody></table></div><hr>
+<h2 id="stop-condition"><a class="anchor" href="#stop-condition">#</a>Stop condition</h2><p>You have this when you can:</p>
+<ol>
+<li>name the four object types and what each stores,</li>
+<li>explain why a commit is a snapshot rather than a diff,</li>
+<li>say what a branch physically is,</li>
+<li>explain why rebase produces different hashes, and</li>
+<li>explain why <code>origin/main</code> can be out of date.</li>
+</ol>
+</article>
+    <div class="pager-row"><a class="pager previous" href="index.html"><span>previous</span>Start here</a><a class="pager next" href="everyday.html"><span>next</span>Everyday git</a></div>
+  </main>
+
+  <nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><ul><li class="d2"><a href="#1-four-object-types">1 · Four object types</a></li><li class="d2"><a href="#2-watch-it-happen">2 · Watch it happen</a></li><li class="d2"><a href="#3-three-consequences-that-matter">3 · Three consequences that matter</a></li><li class="d3"><a href="#a-commit-is-a-snapshot-not-a-diff">A commit is a snapshot, not a diff</a></li><li class="d3"><a href="#a-branch-is-a-40-character-file">A branch is a 40-character file</a></li><li class="d3"><a href="#history-is-a-dag-not-a-line">History is a DAG, not a line</a></li><li class="d2"><a href="#4-why-this-makes-commands-obvious">4 · Why this makes commands obvious</a></li><li class="d2"><a href="#5-the-git-directory">5 · The `.git` directory</a></li><li class="d2"><a href="#6-interview-questions">6 · Interview questions</a></li><li class="d2"><a href="#stop-condition">Stop condition</a></li></ul></nav>
+</div>
+
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  window.__mermaid = mermaid;
+  const dark = () => {
+    const explicit = document.documentElement.getAttribute("data-theme");
+    if (explicit) return explicit === "dark";
+    return matchMedia("(prefers-color-scheme: dark)").matches;
+  };
+  const start = () => {
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: dark() ? "dark" : "neutral",
+      securityLevel: "strict",
+      fontFamily: "IBM Plex Sans, system-ui, sans-serif",
+    });
+    mermaid.run({ querySelector: "pre.mermaid" });
+  };
+  start();
+  // Diagrams carry their own colours, so they have to be re-rendered when the
+  // reader flips the theme rather than restyled by CSS.
+  window.addEventListener("themechange", () => {
+    document.querySelectorAll("pre.mermaid").forEach((el) => {
+      if (el.dataset.src) { el.innerHTML = el.dataset.src; el.removeAttribute("data-processed"); }
+    });
+    start();
+  });
+</script>
+<script src="app.js"></script>
+</body>
+</html>

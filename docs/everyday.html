@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Everyday git · Git Handbook</title>
+<meta name="description" content="The commands you actually run daily, what each does to the four areas, and the three habits that prevent most problems.">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231F4E79'/%3E%3Crect x='7' y='8' width='18' height='3' rx='1.5' fill='%23fff'/%3E%3Crect x='7' y='14' width='12' height='3' rx='1.5' fill='%23A9CCEC'/%3E%3Crect x='7' y='20' width='15' height='3' rx='1.5' fill='%237FB2E0'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="style.css">
+<script>
+  // Applied before first paint so the page never flashes the wrong theme.
+  (function () {
+    try {
+      var t = localStorage.getItem("git-handbook:theme");
+      if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+    } catch (e) {}
+  })();
+</script>
+</head>
+<body>
+
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <button class="menu-btn" id="menu-btn" aria-label="Open navigation" aria-expanded="false">☰</button>
+  <a class="brand" href="index.html">Git&nbsp;Handbook</a>
+  <div class="search-wrap">
+    <input id="search" type="search" placeholder="Search the handbook…" autocomplete="off"
+           aria-label="Search" aria-controls="results" aria-expanded="false">
+    <div id="results" class="results" role="listbox" hidden></div>
+  </div>
+  <button class="theme-btn" id="theme-btn" aria-label="Switch theme">◐</button>
+</header>
+
+<div class="shell">
+  <aside class="sidebar" id="sidebar"><div class="nav-group"><div class="nav-group-title">Start here</div><ul><li><a href="index.html">Start here</a></li></ul></div><div class="nav-group"><div class="nav-group-title">How git actually works</div><ul><li><a href="mental-model.html">How git actually works</a></li></ul></div><div class="nav-group"><div class="nav-group-title">Everyday git</div><ul><li><a href="everyday.html" class="active">Everyday git</a></li></ul></div><div class="nav-group"><div class="nav-group-title">Branching & merging</div><ul><li><a href="branching.html">Branching & merging</a></li></ul></div><div class="nav-group"><div class="nav-group-title">Undoing & recovery</div><ul><li><a href="undoing.html">Undoing & recovery</a></li></ul></div><div class="nav-group"><div class="nav-group-title">GitHub & GitLab</div><ul><li><a href="platforms.html">GitHub & GitLab</a></li></ul></div><div class="nav-group"><div class="nav-group-title">Reference</div><ul><li><a href="cheatsheet.html">The cheat sheet</a></li></ul></div></aside>
+
+  <main id="main" class="main">
+    <article class="prose"><h1 id="everyday-git"><a class="anchor" href="#everyday-git">#</a>Everyday git</h1><blockquote>
+<p><strong>Twelve commands cover about 95% of real usage.</strong> The rest of git exists for
+the times something has gone wrong — that is <a href="undoing.html">undoing &amp; recovery</a>.</p>
+</blockquote>
+<hr>
+<h2 id="1-the-loop"><a class="anchor" href="#1-the-loop">#</a>1 · The loop</h2><pre class="mermaid">flowchart LR
+    P[&quot;git pull --rebase&lt;br/&gt;&lt;i&gt;start from current&lt;/i&gt;&quot;] --&gt; E[&quot;edit files&quot;]
+    E --&gt; S[&quot;git status&lt;br/&gt;&lt;i&gt;what changed?&lt;/i&gt;&quot;]
+    S --&gt; A[&quot;git add -p&lt;br/&gt;&lt;i&gt;stage deliberately&lt;/i&gt;&quot;]
+    A --&gt; C[&quot;git commit -m&lt;br/&gt;&lt;i&gt;one idea&lt;/i&gt;&quot;]
+    C --&gt; E
+    C --&gt; PU[&quot;git push&quot;]
+
+    classDef k fill:#e4edf6,stroke:#1f4e79,stroke-width:2px
+    class S,A k</pre><p><strong>The two highlighted steps are what separate careful users from the rest.</strong>
+<code>status</code> constantly, and <code>add -p</code> so a commit contains one idea rather than
+everything you happened to touch.</p>
+<hr>
+<h2 id="2-the-twelve"><a class="anchor" href="#2-the-twelve">#</a>2 · The twelve</h2><div class="table-scroll"><table><thead><tr><th>Command</th><th>Does</th><th>Touches</th></tr></thead><tbody><tr><td><code>git status</code></td><td>Shows the state of all four areas</td><td>nothing</td></tr><tr><td><code>git add &lt;file&gt;</code></td><td>Stage a file</td><td>working → staging</td></tr><tr><td><code>git add -p</code></td><td>Stage <strong>hunk by hunk</strong>, interactively</td><td>working → staging</td></tr><tr><td><code>git commit -m &quot;…&quot;</code></td><td>Record the staged snapshot</td><td>staging → local</td></tr><tr><td><code>git log --oneline --graph</code></td><td>See the actual shape of history</td><td>nothing</td></tr><tr><td><code>git diff</code></td><td>Working vs staged</td><td>nothing</td></tr><tr><td><code>git diff --staged</code></td><td>Staged vs last commit</td><td>nothing</td></tr><tr><td><code>git switch &lt;branch&gt;</code></td><td>Change branch</td><td>local → working</td></tr><tr><td><code>git switch -c &lt;branch&gt;</code></td><td>Create and change</td><td>writes a ref</td></tr><tr><td><code>git fetch</code></td><td>Update your cache of the remote</td><td>remote → <code>origin/*</code></td></tr><tr><td><code>git pull --rebase</code></td><td>Fetch, then replay your commits on top</td><td>remote → local → working</td></tr><tr><td><code>git push</code></td><td>Send your commits</td><td>local → remote</td></tr></tbody></table></div><hr>
+<h2 id="3-git-status-is-the-most-important-command"><a class="anchor" href="#3-git-status-is-the-most-important-command">#</a>3 · `git status` is the most important command</h2><p><strong>Read it, do not skim it.</strong> It tells you which of the four areas hold what:</p>
+<pre class="code"><code>On branch main
+Your branch is ahead of &#39;origin/main&#39; by 2 commits.      &lt;- local vs remote
+
+Changes to be committed:                                 &lt;- STAGING AREA
+        modified:   a.txt
+
+Changes not staged for commit:                           &lt;- WORKING DIRECTORY
+        modified:   b.txt
+
+Untracked files:                                         &lt;- git does not know these
+        c.txt</code></pre><p>Four distinct states in one output. <strong>Most &quot;git is confusing&quot; moments dissolve
+when you read status carefully</strong> — the answer to &quot;why didn&#39;t my change get
+committed?&quot; is nearly always visible there.</p>
+<p><code>git status -sb</code> gives the compact form once you know the long one.</p>
+<hr>
+<h2 id="4-staging-deliberately"><a class="anchor" href="#4-staging-deliberately">#</a>4 · Staging deliberately</h2><pre class="code"><code class="language-bash">git add -p</code></pre><p>Git shows each change and asks:</p>
+<pre class="code"><code>Stage this hunk [y,n,q,a,d,s,e,?]?
+   y - yes        n - no          q - quit
+   s - SPLIT this hunk into smaller ones
+   e - edit the hunk manually</code></pre><blockquote>
+<p><strong><code>s</code> is the one worth knowing.</strong> You fixed a bug and reformatted three lines
+in the same function. Splitting lets the bug fix be one commit and the
+formatting another — so a reviewer can see the fix without noise, and a
+<code>revert</code> later undoes only what it should.</p>
+</blockquote>
+<hr>
+<h2 id="5-writing-a-commit-message"><a class="anchor" href="#5-writing-a-commit-message">#</a>5 · Writing a commit message</h2><pre class="code"><code>Short summary in the imperative, under ~50 chars
+
+Why this change exists, and what it does that is not obvious
+from the diff. Wrap at ~72. The diff already says WHAT changed;
+this paragraph is for WHY.
+
+Fixes #123</code></pre><div class="table-scroll"><table><thead><tr><th>Do</th><th>Don&#39;t</th></tr></thead><tbody><tr><td>&quot;Fix timeout on slow connections&quot;</td><td>&quot;fixes&quot;</td></tr><tr><td>Say <strong>why</strong>, since the diff shows what</td><td>Restate the diff in prose</td></tr><tr><td>Imperative mood — &quot;add&quot;, not &quot;added&quot;</td><td>Mix five unrelated changes</td></tr><tr><td>Reference the issue</td><td>&quot;wip&quot;, &quot;asdf&quot;, &quot;final v2&quot;</td></tr></tbody></table></div><blockquote>
+<p><strong>The audience is you in six months, mid-incident, running <code>git log -S</code> to
+find when a line appeared.</strong> Write for that person. &quot;fix&quot; tells them nothing;
+&quot;fix timeout because the retry budget was per-request not per-client&quot; tells
+them everything.</p>
+</blockquote>
+<hr>
+<h2 id="6-pull-fetch-and-pull---rebase"><a class="anchor" href="#6-pull-fetch-and-pull---rebase">#</a>6 · pull, fetch, and pull --rebase</h2><pre class="code"><code>git fetch          updates origin/* ONLY. Never touches your work. Always safe.
+git pull           = fetch + merge     -&gt; may create a merge commit
+git pull --rebase  = fetch + rebase    -&gt; replays your commits on top, linear</code></pre><blockquote>
+<p><strong><code>git pull --rebase</code> should usually be your default</strong>, and you can make it
+one: <code>git config --global pull.rebase true</code>. Plain <code>pull</code> creates a merge
+commit every time your local and remote have both moved, which fills history
+with &quot;Merge branch &#39;main&#39; of github.com…&quot; noise that records nothing useful.</p>
+<p><strong>The exception:</strong> if you have already pushed the commits being replayed,
+rebasing rewrites them. In that case merge.</p>
+</blockquote>
+<p><strong><code>git fetch</code> is the safest command in git.</strong> It only updates your cached view
+of the remote. When unsure what has changed upstream, fetch and then look —
+never a reason not to.</p>
+<hr>
+<h2 id="7-stash"><a class="anchor" href="#7-stash">#</a>7 · Stash</h2><pre class="code"><code class="language-bash">git stash              # park tracked changes
+git stash -u           # include untracked files
+git stash list
+git stash pop          # reapply the most recent, and drop it
+git stash apply        # reapply, but KEEP it in the list
+git stash drop</code></pre><blockquote>
+<p><strong><code>git stash</code> without <code>-u</code> leaves untracked files behind</strong>, which surprises
+people mid-<code>pull</code>. If you created new files, use <code>-u</code>.</p>
+<p><strong>A stash is not a commit and not a branch</strong> — it is easy to forget one and
+lose track. For anything you care about, a throwaway branch (<code>git switch -c wip</code>) is safer and visible in <code>git branch</code>.</p>
+</blockquote>
+<hr>
+<h2 id="8-gitignore"><a class="anchor" href="#8-gitignore">#</a>8 · `.gitignore`</h2><pre class="code"><code>node_modules/
+dist/
+.env                 &lt;- CREDENTIALS. This one matters most.
+*.log
+.DS_Store</code></pre><blockquote>
+<p><strong><code>.gitignore</code> only affects files git is not already tracking.</strong> Adding a file
+to <code>.gitignore</code> after committing it does nothing — it stays tracked. To stop
+tracking but keep it on disk:</p>
+<pre class="code"><code class="language-bash">git rm --cached .env</code></pre><p><strong>And note what that does not do: the file is still in every past commit.</strong> A
+credential that was ever committed is compromised and must be rotated —
+removing it from the current tree does not remove it from history, and history
+is public if the repo is.</p>
+</blockquote>
+<hr>
+<h2 id="9-interview-questions"><a class="anchor" href="#9-interview-questions">#</a>9 · Interview questions</h2><div class="table-scroll"><table><thead><tr><th>Question</th><th>Answer</th></tr></thead><tbody><tr><td>⭐ &quot;fetch vs pull?&quot;</td><td>Fetch updates your cached <code>origin/*</code> refs and touches nothing else — always safe. Pull is fetch plus merge (or rebase with <code>--rebase</code>), so it changes your branch and working directory.</td></tr><tr><td>⭐ &quot;Why <code>pull --rebase</code>?&quot;</td><td>Plain pull creates a merge commit whenever both sides moved, filling history with noise that records nothing. Rebase replays your commits on top for a linear history. Not for commits you already pushed.</td></tr><tr><td>&quot;What is the staging area for?&quot;</td><td>Choosing precisely what goes into a commit. <code>git add -p</code> lets one messy working directory become several clean, single-purpose commits — which makes review and revert work properly.</td></tr><tr><td>⭐ &quot;You committed a <code>.env</code> file.&quot;</td><td>Rotate the credential first — it is compromised the moment it is pushed. Removing it from the current tree with <code>git rm --cached</code> does not remove it from history; that needs a history rewrite, and by then assume it has been scraped.</td></tr><tr><td>&quot;What makes a good commit message?&quot;</td><td>Imperative summary under about 50 characters, then why the change exists. The diff already says what changed; the message is for the person debugging in six months.</td></tr></tbody></table></div><hr>
+<h2 id="stop-condition"><a class="anchor" href="#stop-condition">#</a>Stop condition</h2><p>You have this when you can:</p>
+<ol>
+<li>read <code>git status</code> and name which area each section describes,</li>
+<li>use <code>add -p</code> and split a hunk,</li>
+<li>explain why fetch is always safe,</li>
+<li>say when <code>pull --rebase</code> is wrong, and</li>
+<li>explain why <code>.gitignore</code> does not untrack an already-committed file.</li>
+</ol>
+</article>
+    <div class="pager-row"><a class="pager previous" href="mental-model.html"><span>previous</span>How git actually works</a><a class="pager next" href="branching.html"><span>next</span>Branching & merging</a></div>
+  </main>
+
+  <nav class="toc" aria-label="On this page"><div class="toc-title">On this page</div><ul><li class="d2"><a href="#1-the-loop">1 · The loop</a></li><li class="d2"><a href="#2-the-twelve">2 · The twelve</a></li><li class="d2"><a href="#3-git-status-is-the-most-important-command">3 · `git status` is the most important command</a></li><li class="d2"><a href="#4-staging-deliberately">4 · Staging deliberately</a></li><li class="d2"><a href="#5-writing-a-commit-message">5 · Writing a commit message</a></li><li class="d2"><a href="#6-pull-fetch-and-pull---rebase">6 · pull, fetch, and pull --rebase</a></li><li class="d2"><a href="#7-stash">7 · Stash</a></li><li class="d2"><a href="#8-gitignore">8 · `.gitignore`</a></li><li class="d2"><a href="#9-interview-questions">9 · Interview questions</a></li><li class="d2"><a href="#stop-condition">Stop condition</a></li></ul></nav>
+</div>
+
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  window.__mermaid = mermaid;
+  const dark = () => {
+    const explicit = document.documentElement.getAttribute("data-theme");
+    if (explicit) return explicit === "dark";
+    return matchMedia("(prefers-color-scheme: dark)").matches;
+  };
+  const start = () => {
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: dark() ? "dark" : "neutral",
+      securityLevel: "strict",
+      fontFamily: "IBM Plex Sans, system-ui, sans-serif",
+    });
+    mermaid.run({ querySelector: "pre.mermaid" });
+  };
+  start();
+  // Diagrams carry their own colours, so they have to be re-rendered when the
+  // reader flips the theme rather than restyled by CSS.
+  window.addEventListener("themechange", () => {
+    document.querySelectorAll("pre.mermaid").forEach((el) => {
+      if (el.dataset.src) { el.innerHTML = el.dataset.src; el.removeAttribute("data-processed"); }
+    });
+    start();
+  });
+</script>
+<script src="app.js"></script>
+</body>
+</html>
