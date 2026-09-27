@@ -36,6 +36,12 @@ everything you happened to touch.
 
 ---
 
+```sim
+giteveryday
+```
+
+---
+
 ## 2 · The twelve
 
 | Command | Does | Touches |

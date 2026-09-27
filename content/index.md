@@ -52,6 +52,12 @@ touch, and in which direction?*
 
 ---
 
+```sim
+gitindex
+```
+
+---
+
 ## 2 · What this handbook is not
 
 It is not a command reference — `git help` and the man pages already exist and

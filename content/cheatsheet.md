@@ -27,6 +27,12 @@ summary: One page — the transitions, the commands you actually use, the panic 
 
 ---
 
+```sim
+gitcheatsheet
+```
+
+---
+
 ## 2 · Daily
 
 ```bash

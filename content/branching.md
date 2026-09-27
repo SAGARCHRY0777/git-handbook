@@ -72,6 +72,12 @@ git rebase main              # move my branch onto the current main
 
 ---
 
+```sim
+gitbranching
+```
+
+---
+
 ## 2 · The rule
 
 > **Rebase your own unpushed work. Merge everything else.**

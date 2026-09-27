@@ -36,6 +36,12 @@ summary: PRs versus MRs, Actions versus GitLab CI side by side, branch protectio
 
 ---
 
+```sim
+gitplatforms
+```
+
+---
+
 ## 2 · The review workflow
 
 ```mermaid

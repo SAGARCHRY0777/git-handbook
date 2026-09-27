@@ -41,6 +41,12 @@ summary: reset, revert, restore and checkout distinguished by which of the four 
 
 ---
 
+```sim
+gitundoing
+```
+
+---
+
 ## 2 · reset, revert, restore, checkout
 
 **These four confuse everyone because their names do not say which area they

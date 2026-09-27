@@ -56,6 +56,7 @@ memory.</p>
 
     classDef o fill:#e4edf6,stroke:#1f4e79,stroke-width:2px
     class C,T,B1,T2,TAG o</pre><div class="table-scroll"><table><thead><tr><th>Object</th><th>Holds</th><th>Does <strong>not</strong> hold</th></tr></thead><tbody><tr><td><strong>blob</strong></td><td>File contents</td><td>The filename, permissions, or any history</td></tr><tr><td><strong>tree</strong></td><td>Names → blobs/trees, plus modes</td><td>Contents</td></tr><tr><td><strong>commit</strong></td><td>One tree + parents + author + message</td><td>Any diff</td></tr><tr><td><strong>tag</strong></td><td>A pointer to an object, plus a message</td><td>—</td></tr></tbody></table></div><hr>
+<div class="sim" data-sim="gitmentalmodel"><p class="sim__fallback">Interactive simulation — needs JavaScript.</p></div><hr>
 <h2 id="2-watch-it-happen"><a class="anchor" href="#2-watch-it-happen">#</a>2 · Watch it happen</h2><p>A fresh repository, one file containing <code>hello</code>:</p>
 <pre class="code"><code>$ echo &quot;hello&quot; &gt; a.txt
 $ git hash-object a.txt

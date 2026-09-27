@@ -41,6 +41,12 @@ flowchart TD
 
 ---
 
+```sim
+gitmentalmodel
+```
+
+---
+
 ## 2 · Watch it happen
 
 A fresh repository, one file containing `hello`:
