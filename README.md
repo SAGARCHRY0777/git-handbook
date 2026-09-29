@@ -3,7 +3,7 @@
 Git, GitHub and GitLab: the mental model, the state transitions, and how to get
 out of trouble.
 
-**Live site:** https://SAGARCHRY0777.github.io/git-handbook/
+**Read it here → [sagarchry0777.github.io/git-handbook](https://sagarchry0777.github.io/git-handbook/)**
 
 ---
 
