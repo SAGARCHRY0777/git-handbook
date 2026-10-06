@@ -223,3 +223,6 @@ You have this when you can:
 3. say what a branch physically is,
 4. explain why rebase produces different hashes, and
 5. explain why `origin/main` can be out of date.
+
+With the model in place, [everyday commands](everyday.md) is the same four areas
+seen from the command line — what each command moves, rather than what it is called.

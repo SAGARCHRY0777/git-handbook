@@ -86,6 +86,7 @@ flowchart TD
 | **20 minutes** | [The cheat sheet](cheatsheet.md), and nothing else |
 | **An hour** | [How git actually works](mental-model.md) then the cheat sheet |
 | **You broke something now** | [Undoing & recovery](undoing.md) — start at §1 |
+| **You use git daily and it still surprises you** | [Everyday commands](everyday.md), then [branching](branching.md) |
 | **You are learning properly** | Straight through, in the order above |
 
 ---

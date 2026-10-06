@@ -162,6 +162,9 @@ often, or keep branches under a few days.**
 
 ---
 
+That button belongs to the host, not to git: [platforms](platforms.md) covers how
+GitHub and GitLab differ on it, along with branch protection and CI.
+
 ## 5 · Squash, merge, or rebase on the PR button
 
 GitHub and GitLab offer three merge buttons. They are not interchangeable.

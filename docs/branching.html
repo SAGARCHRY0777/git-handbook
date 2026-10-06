@@ -124,6 +124,8 @@ parallel supported releases. If you deploy from <code>main</code> several times 
 open for three weeks accumulates conflicts superlinearly. <strong>Merge <code>main</code> in
 often, or keep branches under a few days.</strong></p>
 <hr>
+<p>That button belongs to the host, not to git: <a href="platforms.html">platforms</a> covers how
+GitHub and GitLab differ on it, along with branch protection and CI.</p>
 <h2 id="5-squash-merge-or-rebase-on-the-pr-button"><a class="anchor" href="#5-squash-merge-or-rebase-on-the-pr-button">#</a>5 · Squash, merge, or rebase on the PR button</h2><p>GitHub and GitLab offer three merge buttons. They are not interchangeable.</p>
 <div class="table-scroll"><table><thead><tr><th>Button</th><th>Result on <code>main</code></th><th>Use when</th></tr></thead><tbody><tr><td><strong>Create a merge commit</strong></td><td>Every branch commit, plus a merge commit</td><td>You want the full development record</td></tr><tr><td><strong>Squash and merge</strong></td><td><strong>One commit</strong> containing everything</td><td><strong>The usual default</strong> — the branch&#39;s &quot;wip&quot; commits are noise</td></tr><tr><td><strong>Rebase and merge</strong></td><td>Each commit replayed, no merge commit</td><td>You curated the commits and each is meaningful</td></tr></tbody></table></div><blockquote>
 <p><strong>Squash-merge is the right default for most teams.</strong> It makes <code>main</code> a clean
