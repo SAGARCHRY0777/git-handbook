@@ -11,7 +11,7 @@ summary: The commands you actually run daily, what each does to the four areas, 
 # Everyday git
 
 > **Twelve commands cover about 95% of real usage.** The rest of git exists for
-> the times something has gone wrong — that is [undoing & recovery](undoing.html).
+> the times something has gone wrong — that is [undoing & recovery](undoing.md).
 
 ---
 

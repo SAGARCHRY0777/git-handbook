@@ -83,9 +83,9 @@ flowchart TD
 
 | If you have | Read |
 |---|---|
-| **20 minutes** | [The cheat sheet](cheatsheet.html), and nothing else |
-| **An hour** | [How git actually works](mental-model.html) then the cheat sheet |
-| **You broke something now** | [Undoing & recovery](undoing.html) — start at §1 |
+| **20 minutes** | [The cheat sheet](cheatsheet.md), and nothing else |
+| **An hour** | [How git actually works](mental-model.md) then the cheat sheet |
+| **You broke something now** | [Undoing & recovery](undoing.md) — start at §1 |
 | **You are learning properly** | Straight through, in the order above |
 
 ---
@@ -101,7 +101,7 @@ flowchart TD
 > data.
 
 > **3. Almost nothing is ever really deleted until `gc` runs.** The
-> [reflog](undoing.html#5--reflog--the-undo-history-for-your-undo) remembers
+> [reflog](undoing.md#5--reflog--the-undo-history-for-your-undo) remembers
 > where HEAD has been, usually for 90 days. **If you think you destroyed work,
 > you probably have not.**
 
@@ -115,4 +115,4 @@ flowchart TD
 | [system-design-handbook](https://SAGARCHRY0777.github.io/system-design-handbook/) | The system design round |
 | [llm-handbook](https://SAGARCHRY0777.github.io/llm-handbook/) | LLM systems — RAG, evaluation, serving |
 
-Start with [how git actually works](mental-model.html).
+Start with [how git actually works](mental-model.md).
